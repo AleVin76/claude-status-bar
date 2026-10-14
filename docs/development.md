@@ -35,7 +35,7 @@ claude plugin test .
 
 ```
 hooks: session.start, session.measure, turn.step, session.end, ui.render{component=AbovePrompt}
-calls: $.clock.every, $.clock.now, $.session.model, $.session.usage, $.ui.invalidate, $.ui.resolve
+calls: $.clock.every, $.clock.now, $.env.get, $.process.run, $.session.model, $.session.usage, $.ui.invalidate, $.ui.resolve
 ```
 
 ## Type checking

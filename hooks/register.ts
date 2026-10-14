@@ -14,6 +14,7 @@ type Segment = {
 
 type Snapshot = {
   ttlMs: number
+  dates: DateFormatter
   // Last main-loop API response: every request restarts the prompt cache TTL
   lastResponseAt?: number
   effort?: string
@@ -22,7 +23,7 @@ type Snapshot = {
   now: number
 }
 
-const state: Snapshot = { ttlMs: TTL_MS['5m'], now: 0 }
+const state: Snapshot = { ttlMs: TTL_MS['5m'], dates: intlFormatter(undefined), now: 0 }
 
 function clamp(percent: number): number {
   return Math.max(0, Math.min(100, percent))
@@ -55,12 +56,86 @@ function countdown(ms: number): string {
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`
 }
 
+type DateFormatter = { time: (d: Date) => string; dateTime: (d: Date) => string }
+
+const TIME_FORMAT: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' }
+const DATE_TIME_FORMAT: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', ...TIME_FORMAT }
+
+function intlFormatter(locale: string | undefined): DateFormatter {
+  return {
+    time: d => d.toLocaleTimeString(locale, TIME_FORMAT),
+    dateTime: d => d.toLocaleString(locale, DATE_TIME_FORMAT),
+  }
+}
+
+// Renders a .NET custom date/time pattern (Windows "Region" settings) for the tokens short patterns use
+function formatDotNet(pattern: string, d: Date, locale: string | undefined): string {
+  const h = d.getHours()
+  const tokens: Record<string, string> = {
+    MMMM: d.toLocaleString(locale, { month: 'long' }), MMM: d.toLocaleString(locale, { month: 'short' }),
+    yyyy: String(d.getFullYear()), yy: pad(d.getFullYear() % 100),
+    MM: pad(d.getMonth() + 1), M: String(d.getMonth() + 1),
+    dd: pad(d.getDate()), d: String(d.getDate()),
+    HH: pad(h), H: String(h),
+    hh: pad(h % 12 || 12), h: String(h % 12 || 12),
+    mm: pad(d.getMinutes()), m: String(d.getMinutes()),
+    tt: h < 12 ? 'AM' : 'PM', t: h < 12 ? 'A' : 'P',
+  }
+  return pattern.replace(/'([^']*)'|MMMM|MMM|yyyy|yy|MM|M|dd|d|HH|H|hh|h|mm|m|tt|t/g, (match, literal: string | undefined) =>
+    literal ?? tokens[match] ?? match,
+  )
+}
+
+// Short date without the year: "dd/MM/yyyy" -> "dd/MM", "yyyy-MM-dd" -> "MM-dd"
+function stripYear(pattern: string): string {
+  return pattern.replace(/^y+[^dM]*|[^dM]*y+$/g, '').replace(/([^dM]+)y+[^dM]*/g, '$1')
+}
+
+function dotNetFormatter(shortDate: string, shortTime: string, locale: string | undefined): DateFormatter {
+  const datePattern = stripYear(shortDate)
+  return {
+    time: d => formatDotNet(shortTime, d, locale),
+    dateTime: d => `${formatDotNet(datePattern, d, locale)} ${formatDotNet(shortTime, d, locale)}`,
+  }
+}
+
+// "it_IT.UTF-8" -> "it-IT"; "C"/"POSIX" carry no locale
+function posixToBcp47(value: string | undefined): string | undefined {
+  const tag = value?.split('.')[0]?.split('@')[0]?.replace('_', '-')
+  return tag && tag !== 'C' && tag !== 'POSIX' ? tag : undefined
+}
+
+async function systemFormatter($: EngineInterface): Promise<DateFormatter> {
+  if ((await $.env.get('OS')) === 'Windows_NT') {
+    try {
+      const { exitCode, stdout } = await $.process.run(
+        ['powershell', '-NoProfile', '-NonInteractive', '-Command',
+          '$c = Get-Culture; $c.DateTimeFormat.ShortDatePattern; $c.DateTimeFormat.ShortTimePattern; $c.Name'],
+        { timeoutMs: 10_000 },
+      )
+      const [shortDate, shortTime, culture] = stdout.split(/\r?\n/).map(line => line.trim())
+      if (exitCode === 0 && shortDate && shortTime) return dotNetFormatter(shortDate, shortTime, culture || undefined)
+    } catch {
+      // Fall through to the environment-based locale
+    }
+  }
+
+  const fromEnv = posixToBcp47((await $.env.get('LC_ALL')) || (await $.env.get('LC_TIME')) || (await $.env.get('LANG')))
+  if (fromEnv) return intlFormatter(fromEnv)
+
+  try {
+    const { exitCode, stdout } = await $.process.run(['defaults', 'read', '-g', 'AppleLocale'], { timeoutMs: 5_000 })
+    if (exitCode === 0) return intlFormatter(posixToBcp47(stdout.trim()))
+  } catch {
+    // Not macOS
+  }
+  return intlFormatter(undefined)
+}
+
 function resetLabel(limit: SessionRateLimit): string {
   if (!limit.resetsAt) return ''
-  const d = new Date(limit.resetsAt)
-  return limit.kind === 'five_hour'
-    ? ` (${pad(d.getHours())}:${pad(d.getMinutes())})`
-    : ` (${pad(d.getDate())}/${pad(d.getMonth() + 1)})`
+  const date = new Date(limit.resetsAt)
+  return ` (${limit.kind === 'five_hour' ? state.dates.time(date) : state.dates.dateTime(date)})`
 }
 
 function limitSegment(icon: string, limit: SessionRateLimit | undefined): Segment | undefined {
@@ -89,7 +164,7 @@ function segments(): Segment[] {
     if (weekly) list.push(weekly)
   }
   if (model) list.push({ icon: '🤖', text: `${model}${effort ? ` ${effort}` : ''}` })
-  if (usage?.cost) list.push({ icon: '💲', text: `$${usage.cost.usd.toFixed(2)}` })
+  if (usage?.cost) list.push({ icon: '💲', text: usage.cost.usd.toFixed(2) })
   return list
 }
 
@@ -122,8 +197,12 @@ async function tick($: EngineInterface): Promise<void> {
 
 export const register: Register = (on, options) => {
   state.ttlMs = options.cacheTtl === '1h' ? TTL_MS['1h'] : TTL_MS['5m']
+  const locale = typeof options.locale === 'string' ? options.locale.trim() : ''
+  if (locale !== '') state.dates = intlFormatter(locale)
 
   on('session.start', async ($, e, next) => {
+    // An explicit locale wins; otherwise the OS regional settings, resolved once per session
+    if (locale === '') state.dates = await systemFormatter($)
     state.usage = await $.session.usage()
     state.model = await $.session.model()
     await tick($)

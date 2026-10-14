@@ -22,9 +22,25 @@ The thresholds are `WARNING_FROM` and `ERROR_FROM` at the top of `hooks/register
 | 📅 Weekly limit | `rateLimits` entry `seven_day` | `session.measure` |
 | 🤖 Model | `$.session.model()` | Session start and each request |
 | 🤖 Effort | `effort` of the last request (`turn.step`) | Each request |
-| 💲 Cost | `cost.usd`, the same total as `/cost` | `session.measure` |
+| 💲 Cost | `cost.usd`, the same total as `/cost`, in US dollars | `session.measure` |
 
 `session.measure` is raised by Claude Code after every turn and whenever a plan limit moves, so those segments carry the same figures as the native status line.
+
+## Date and time format
+
+Reset labels show the time for the 5-hour window and date + time (without the year) for the weekly window. The format is resolved once per session:
+
+| Source | Used when |
+|---|---|
+| `locale` option | Set to a non-empty value |
+| Windows: `Get-Culture` short date and short time patterns | Windows. Honors custom formats set in **Settings → Time & language → Region** (date order, separators, 12/24 h) |
+| `LC_ALL`, `LC_TIME`, `LANG` | macOS/Linux with a locale in the environment |
+| `defaults read -g AppleLocale` | macOS without a locale in the environment |
+| `en-US` | Nothing above is available |
+
+Examples for the weekly reset: `20/10 11:00` (it-IT, `dd/MM/yyyy` + `HH:mm`), `10/20 11:00 AM` (en-US), `20.10 11:00` (de-DE).
+
+The mod's runtime does not inherit the system locale by itself, which is why it is read explicitly.
 
 ## Prompt cache countdown
 
