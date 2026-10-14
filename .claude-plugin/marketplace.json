@@ -1,0 +1,16 @@
+{
+  "name": "claude-status-bar",
+  "owner": {
+    "name": "Alessandro Vinciguerra"
+  },
+  "metadata": {
+    "description": "Claude Status Bar: a Claude Code mod that replaces the status line"
+  },
+  "plugins": [
+    {
+      "name": "statusbar",
+      "source": "./",
+      "description": "Status line: prompt cache countdown, context, plan limits, model/effort, API-equivalent cost"
+    }
+  ]
+}
