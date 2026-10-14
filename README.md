@@ -1,6 +1,6 @@
 # Claude Status Bar
 
-A [Claude Code mod](https://code.claude.com/docs/it/plugins/mods/overview) that adds a single status line under the prompt with everything you need to keep an eye on during a session:
+A [Claude Code mod](https://code.claude.com/docs/it/plugins/mods/overview) that adds a single colored status row directly above the prompt with everything you need to keep an eye on during a session:
 
 ```
 ⏳ ███████░░░ 3:41 | 🧠 █░░░░░░░░░ 6.00% | 🕒 █░░░░░░░░░ 5.00% (11:00) | 📅 ░░░░░░░░░░ 1.00% (20/10) | 🤖 Opus 5.5 medium | 💲 $1.23
@@ -14,6 +14,8 @@ A [Claude Code mod](https://code.claude.com/docs/it/plugins/mods/overview) that 
 | 📅 | Weekly plan limit, with reset date |
 | 🤖 | Model and reasoning effort |
 | 💲 | What the session would have cost at API prices |
+
+Bars turn **green** below 50%, **yellow** from 50% and **red** from 80%. The ⏳ bar drains as the cache ages and changes color on the elapsed share. Colors follow your Claude Code theme (`success`, `warning`, `error`).
 
 ## Requirements
 

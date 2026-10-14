@@ -1,8 +1,10 @@
 {
   "name": "statusbar",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Status line: prompt cache countdown, context, plan limits, model/effort, API-equivalent cost",
-  "author": { "name": "Alessandro Vinciguerra" },
+  "author": {
+    "name": "Alessandro Vinciguerra"
+  },
   "homepage": "https://github.com/AleVin76/claude-status-bar",
   "repository": "https://github.com/AleVin76/claude-status-bar",
   "license": "MIT",
@@ -12,7 +14,10 @@
       "title": "Prompt cache TTL",
       "description": "Prompt cache lifetime used for the countdown",
       "default": "5m",
-      "options": ["5m", "1h"]
+      "options": [
+        "5m",
+        "1h"
+      ]
     }
   }
 }

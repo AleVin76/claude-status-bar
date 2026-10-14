@@ -1,7 +1,16 @@
-import type { EngineInterface, Register, SessionRateLimit, SessionUsage } from 'claude-code'
+import type { Color, EngineInterface, Register, RenderInput, RenderElement, SessionRateLimit, SessionUsage } from 'claude-code'
 
 const BAR_WIDTH = 10
 const TTL_MS = { '5m': 300_000, '1h': 3_600_000 } as const
+const WARNING_FROM = 50
+const ERROR_FROM = 80
+
+type Segment = {
+  icon: string
+  // Fill level of the bar and the value its color is judged on (0-100); absent for plain text
+  percent?: number
+  text: string
+}
 
 type Snapshot = {
   ttlMs: number
@@ -10,13 +19,24 @@ type Snapshot = {
   effort?: string
   model?: string
   usage?: Omit<SessionUsage, 'startedAt'>
+  now: number
 }
 
-const state: Snapshot = { ttlMs: TTL_MS['5m'] }
+const state: Snapshot = { ttlMs: TTL_MS['5m'], now: 0 }
+
+function clamp(percent: number): number {
+  return Math.max(0, Math.min(100, percent))
+}
 
 function bar(percent: number): string {
-  const filled = Math.max(0, Math.min(BAR_WIDTH, Math.round((percent / 100) * BAR_WIDTH)))
+  const filled = Math.round((clamp(percent) / 100) * BAR_WIDTH)
   return '█'.repeat(filled) + '░'.repeat(BAR_WIDTH - filled)
+}
+
+function levelColor(percent: number): Color {
+  if (percent >= ERROR_FROM) return 'error'
+  if (percent >= WARNING_FROM) return 'warning'
+  return 'success'
 }
 
 function pad(n: number): string {
@@ -43,32 +63,61 @@ function resetLabel(limit: SessionRateLimit): string {
     : ` (${pad(d.getDate())}/${pad(d.getMonth() + 1)})`
 }
 
-function limitSegment(icon: string, limit: SessionRateLimit | undefined): string | undefined {
-  return limit && `${icon} ${bar(limit.percentUsed)} ${pct(limit.percentUsed)}${resetLabel(limit)}`
+function limitSegment(icon: string, limit: SessionRateLimit | undefined): Segment | undefined {
+  return limit && { icon, percent: limit.percentUsed, text: `${pct(limit.percentUsed)}${resetLabel(limit)}` }
 }
 
-function cacheSegment(now: number): string {
-  if (state.lastResponseAt === undefined) return `⏳ ${bar(0)} --:--`
-  const left = state.lastResponseAt + state.ttlMs - now
-  return left > 0 ? `⏳ ${bar((left / state.ttlMs) * 100)} ${countdown(left)}` : `⏳ ${bar(0)} scaduta`
+function cacheSegment(): Segment {
+  if (state.lastResponseAt === undefined) return { icon: '⏳', percent: 0, text: '--:--' }
+  const left = state.lastResponseAt + state.ttlMs - state.now
+  // Elapsed share drives the color: green when fresh, red close to expiry
+  return left > 0
+    ? { icon: '⏳', percent: 100 - (left / state.ttlMs) * 100, text: countdown(left) }
+    : { icon: '⏳', percent: 100, text: 'scaduta' }
 }
 
-async function refresh($: EngineInterface): Promise<void> {
-  const segments = [cacheSegment(await $.clock.now())]
+function segments(): Segment[] {
+  const list = [cacheSegment()]
   const { usage, model, effort } = state
 
   if (usage) {
     const context = usage.context.percent ?? 0
-    segments.push(`🧠 ${bar(context)} ${pct(context)}`)
+    list.push({ icon: '🧠', percent: context, text: pct(context) })
     const fiveHour = limitSegment('🕒', usage.rateLimits.find(l => l.kind === 'five_hour'))
     const weekly = limitSegment('📅', usage.rateLimits.find(l => l.kind === 'seven_day'))
-    if (fiveHour) segments.push(fiveHour)
-    if (weekly) segments.push(weekly)
+    if (fiveHour) list.push(fiveHour)
+    if (weekly) list.push(weekly)
   }
-  if (model) segments.push(`🤖 ${model}${effort ? ` ${effort}` : ''}`)
-  if (usage?.cost) segments.push(`💲 $${usage.cost.usd.toFixed(2)}`)
+  if (model) list.push({ icon: '🤖', text: `${model}${effort ? ` ${effort}` : ''}` })
+  if (usage?.cost) list.push({ icon: '💲', text: `$${usage.cost.usd.toFixed(2)}` })
+  return list
+}
 
-  $.ui.status(segments.join(' | '))
+function draw($: EngineInterface, e: RenderInput): RenderElement {
+  const { Box, Text } = $.ui.resolve(e)
+  const children: RenderElement[] = []
+
+  segments().forEach((segment, i) => {
+    if (i > 0) children.push(Text({ dimColor: true, children: [' | '] }))
+    if (segment.percent === undefined) {
+      children.push(Text({ children: [`${segment.icon} ${segment.text}`] }))
+      return
+    }
+    // Cache bar shows time left, so it drains while its color heats up
+    const fill = segment.icon === '⏳' && segment.text !== '--:--' ? 100 - segment.percent : segment.percent
+    children.push(
+      Text({ children: [`${segment.icon} `] }),
+      Text({ color: levelColor(segment.percent), children: [bar(fill)] }),
+      Text({ children: [` ${segment.text}`] }),
+    )
+  })
+
+  return Box({ flexDirection: 'row', children: [Text({ wrap: 'truncate-end', children })] })
+}
+
+async function tick($: EngineInterface): Promise<void> {
+  state.now = await $.clock.now()
+  $.ui.invalidate('ui.render')
 }
 
 export const register: Register = (on, options) => {
@@ -77,15 +126,15 @@ export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     state.usage = await $.session.usage()
     state.model = await $.session.model()
-    await refresh($)
+    await tick($)
     // 1 s tick drives the cache countdown; the other figures arrive via session.measure
-    $.clock.every(1000, () => void refresh($))
+    $.clock.every(1000, () => void tick($))
     return next(e)
   })
 
   on('session.measure', async ($, e, next) => {
     state.usage = { context: e.context, rateLimits: e.rateLimits, cost: e.cost }
-    await refresh($)
+    await tick($)
     return next(e)
   })
 
@@ -95,7 +144,7 @@ export const register: Register = (on, options) => {
       state.lastResponseAt = await $.clock.now()
       state.model = await $.session.model()
       if (e.effort !== undefined) state.effort = String(e.effort)
-      await refresh($)
+      await tick($)
     }
     return result
   })
@@ -104,5 +153,11 @@ export const register: Register = (on, options) => {
   on('session.end', async ($, e, next) => {
     if (e.reason === 'clear') state.lastResponseAt = undefined
     return next(e)
+  })
+
+  // Drawn in the band above the prompt: unlike $.ui.status it takes colors and carries no plugin label
+  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    if (e.props.hasSurvey) return next(e)
+    return draw($, e)
   })
 }

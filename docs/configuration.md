@@ -34,7 +34,7 @@ For a folder loaded with `--plugin-dir` or `CLAUDE_CODE_PLUGIN_DIRS`, the key is
 
 ## Coexistence with `statusLine`
 
-The mod draws through `$.ui.status`, a line under the prompt next to Claude Code's own notices. It does not replace the command-based `statusLine` setting: if that is still configured, both are shown. The installer removes it for you; otherwise delete the `statusLine` block from `settings.json`.
+The mod draws in the band directly above the prompt. It does not replace the command-based `statusLine` setting: if that is still configured, both are shown. The installer removes it for you; otherwise delete the `statusLine` block from `settings.json`.
 
 ## Turning it off
 

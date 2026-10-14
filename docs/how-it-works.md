@@ -1,12 +1,22 @@
 # How it works
 
-The mod is a single hooks module, [`hooks/register.ts`](../hooks/register.ts), that runs inside Claude Code. It keeps a small in-memory snapshot and redraws one line with `$.ui.status`.
+The mod is a single hooks module, [`hooks/register.ts`](../hooks/register.ts), that runs inside Claude Code. It keeps a small in-memory snapshot and draws one row in the band above the prompt (`ui.render` hook on the `AbovePrompt` site). Unlike `$.ui.status`, that site accepts colored text and shows no plugin label.
+
+## Colors
+
+| Level | Color (theme key) |
+|---|---|
+| < 50% | green (`success`) |
+| 50–79% | yellow (`warning`) |
+| ≥ 80% | red (`error`) |
+
+The thresholds are `WARNING_FROM` and `ERROR_FROM` at the top of `hooks/register.ts`. The ⏳ bar shows the time left, while its color is judged on the elapsed share: green right after a request, red near expiry.
 
 ## Data sources
 
 | Segment | Source | Refreshed |
 |---|---|---|
-| ⏳ Cache | Time of the last main-loop API response (`turn.step` hook) plus `cacheTtl` | Every second (`$.clock.every`) |
+| ⏳ Cache | Time of the last main-loop API response (`turn.step` hook) plus `cacheTtl` | Every second (`$.clock.every` + `$.ui.invalidate`) |
 | 🧠 Context | `context.percent` | `session.measure` |
 | 🕒 5-hour limit | `rateLimits` entry `five_hour` (`percentUsed`, `resetsAt`) | `session.measure` |
 | 📅 Weekly limit | `rateLimits` entry `seven_day` | `session.measure` |
@@ -52,6 +62,7 @@ The countdown is an estimate computed on the client: it assumes the prefix was c
 |---|---|
 | No bar at all | `claude --version` ≥ 2.1.287; `/plugin` lists the mod as active; `disableAllHooks` is not `true` in `settings.json` |
 | Two bars | `statusLine` is still in `settings.json`: remove it |
+| Row briefly disappears | A survey is using the band above the prompt; the row comes back when it closes |
 | ⏳ always `--:--` | No request sent yet in this session |
 | 🕒 / 📅 missing | API-key login, or no response received yet |
 | Errors | Start with `claude --debug` and look for lines starting with `statusbar:` |
