@@ -3,7 +3,9 @@
     Installs (or updates) the Claude Status Bar mod for Claude Code.
 
 .PARAMETER CacheTtl
-    Prompt cache TTL used for the countdown: 5m (default) or 1h.
+    Sets Claude Code's prompt cache TTL ("promptCacheTtl" in settings.json): 5m or 1h.
+    Left out, the current setting is kept (unset = automatic: 1h on a subscription, 5m on an API key).
+    The TTL can also be switched later from the status bar.
     One-liner equivalent: $env:CSB_CACHE_TTL.
 
 .PARAMETER KeepStatusLine
@@ -18,8 +20,8 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('5m', '1h')]
-    [string]$CacheTtl = $(if ($env:CSB_CACHE_TTL) { $env:CSB_CACHE_TTL } else { '5m' }),
+    [ValidateSet('', '5m', '1h')]
+    [string]$CacheTtl = $(if ($env:CSB_CACHE_TTL) { $env:CSB_CACHE_TTL } else { '' }),
     [switch]$KeepStatusLine = ($env:CSB_KEEP_STATUSLINE -eq '1')
 )
 
@@ -67,23 +69,47 @@ if ($installed | Where-Object { $_.id -eq $PluginId }) {
     Write-Step "Updating $PluginId"
     $r = Invoke-Claude plugin update $PluginId
 } else {
-    Write-Step "Installing $PluginId (cacheTtl=$CacheTtl)"
-    $r = Invoke-Claude plugin install $PluginId --config "cacheTtl=$CacheTtl"
+    Write-Step "Installing $PluginId"
+    $r = Invoke-Claude plugin install $PluginId
 }
 if ($r.ExitCode -ne 0) { throw "Plugin step failed:`n$($r.Output)" }
 
-# 4. settings.json: drop the old command-based status line so only one bar is shown
+# 4. settings.json: old status line, prompt cache TTL, option dropped in 1.3.0
 $settingsPath = Join-Path $env:USERPROFILE '.claude\settings.json'
-if (-not $KeepStatusLine -and (Test-Path $settingsPath)) {
+if (Test-Path $settingsPath) {
     $settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
-    if ($settings.PSObject.Properties.Name -contains 'statusLine') {
+} else {
+    $settings = [pscustomobject]@{}
+}
+$changes = @()
+
+if (-not $KeepStatusLine -and $settings.PSObject.Properties.Name -contains 'statusLine') {
+    $settings.PSObject.Properties.Remove('statusLine')
+    $changes += "removed 'statusLine'"
+}
+
+if ($CacheTtl) {
+    $settings | Add-Member -NotePropertyName promptCacheTtl -NotePropertyValue $CacheTtl -Force
+    $changes += "promptCacheTtl = $CacheTtl"
+}
+
+$options = $settings.pluginConfigs.$PluginId.options
+if ($options -and $options.PSObject.Properties.Name -contains 'cacheTtl') {
+    $options.PSObject.Properties.Remove('cacheTtl')
+    $changes += "removed obsolete statusbar option 'cacheTtl'"
+}
+
+if ($changes.Count -gt 0) {
+    if (Test-Path $settingsPath) {
         $backup = "$settingsPath.$(Get-Date -Format 'yyyyMMdd-HHmmss').bak"
         Copy-Item $settingsPath $backup
-        $settings.PSObject.Properties.Remove('statusLine')
-        $json = $settings | ConvertTo-Json -Depth 64
-        [IO.File]::WriteAllText($settingsPath, $json, (New-Object Text.UTF8Encoding $false))
-        Write-Step "Removed 'statusLine' from settings.json (backup: $backup)"
+        Write-Step "Backup of settings.json: $backup"
+    } else {
+        New-Item -ItemType Directory -Force -Path (Split-Path $settingsPath) | Out-Null
     }
+    $json = $settings | ConvertTo-Json -Depth 64
+    [IO.File]::WriteAllText($settingsPath, $json, (New-Object Text.UTF8Encoding $false))
+    Write-Step "settings.json: $($changes -join ', ')"
 }
 
 Write-Host ''

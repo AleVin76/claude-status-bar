@@ -9,9 +9,9 @@ What they change:
 | File / command | Change |
 |---|---|
 | `claude plugin marketplace add AleVin76/claude-status-bar` | Adds `claude-status-bar` under `extraKnownMarketplaces` in `~/.claude/settings.json` |
-| `claude plugin install statusbar@claude-status-bar --config cacheTtl=…` | Enables the plugin (`enabledPlugins`) and stores the option (`pluginConfigs`) |
-| `~/.claude/settings.json` | Removes `statusLine` (unless `-KeepStatusLine` / `--keep-statusline`) |
-| `~/.claude/settings.json.<yyyyMMdd-HHmmss>.bak` | Backup written before `statusLine` is removed |
+| `claude plugin install statusbar@claude-status-bar` | Enables the plugin (`enabledPlugins`) |
+| `~/.claude/settings.json` | Removes `statusLine` (unless `-KeepStatusLine` / `--keep-statusline`); sets `promptCacheTtl` with `-CacheTtl` / `--cache-ttl`; drops the pre-1.3.0 `cacheTtl` option |
+| `~/.claude/settings.json.<yyyyMMdd-HHmmss>.bak` | Backup written before any of the changes above |
 
 On Windows `~` is `%USERPROFILE%`.
 
@@ -36,7 +36,7 @@ Or from the shell:
 
 ```bash
 claude plugin marketplace add AleVin76/claude-status-bar
-claude plugin install statusbar@claude-status-bar --config cacheTtl=5m
+claude plugin install statusbar@claude-status-bar
 ```
 
 ## Manual (from a local folder)

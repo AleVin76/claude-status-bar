@@ -34,8 +34,8 @@ claude plugin test .
 `validate` lists the events the module hooks and the API calls it makes:
 
 ```
-hooks: session.start, session.measure, turn.step, session.end, ui.render{component=AbovePrompt}
-calls: $.clock.every, $.clock.now, $.env.get, $.process.run, $.session.model, $.session.usage, $.ui.invalidate, $.ui.resolve
+hooks: session.start, session.measure, turn.step, classic.ConfigChange, session.end, ui.render{component=AbovePrompt}
+calls: $.clock.every, $.clock.now, $.env.get, $.fs.exists, $.fs.read, $.fs.write, $.process.run, $.session.model, $.session.usage, $.settings.read, $.ui.invalidate, $.ui.resolve, $.ui.toast
 ```
 
 ## Type checking

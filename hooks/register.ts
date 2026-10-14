@@ -1,5 +1,10 @@
 import type { Color, EngineInterface, Register, RenderInput, RenderElement, SessionRateLimit, SessionUsage } from 'claude-code'
 
+type Ttl = '5m' | '1h'
+
+// Why the TTL has its value; `force` and `env` cannot be changed from the bar
+type TtlSource = 'force' | 'env' | 'setting' | 'enable-1h' | 'auto'
+
 const BAR_WIDTH = 10
 const TTL_MS = { '5m': 300_000, '1h': 3_600_000 } as const
 const WARNING_FROM = 50
@@ -13,7 +18,10 @@ type Segment = {
 }
 
 type Snapshot = {
-  ttlMs: number
+  ttl: Ttl
+  ttlSource: TtlSource
+  // TTL the last request was sent with: a switch applies from the next request on
+  requestTtl?: Ttl
   dates: DateFormatter
   // Last main-loop API response: every request restarts the prompt cache TTL
   lastResponseAt?: number
@@ -23,7 +31,7 @@ type Snapshot = {
   now: number
 }
 
-const state: Snapshot = { ttlMs: TTL_MS['5m'], dates: intlFormatter(undefined), now: 0 }
+const state: Snapshot = { ttl: '5m', ttlSource: 'auto', dates: intlFormatter(undefined), now: 0 }
 
 function clamp(percent: number): number {
   return Math.max(0, Math.min(100, percent))
@@ -144,10 +152,11 @@ function limitSegment(icon: string, limit: SessionRateLimit | undefined): Segmen
 
 function cacheSegment(): Segment {
   if (state.lastResponseAt === undefined) return { icon: '⏳', percent: 0, text: '--:--' }
-  const left = state.lastResponseAt + state.ttlMs - state.now
+  const ttlMs = TTL_MS[state.requestTtl ?? state.ttl]
+  const left = state.lastResponseAt + ttlMs - state.now
   // Elapsed share drives the color: green when fresh, red close to expiry
   return left > 0
-    ? { icon: '⏳', percent: 100 - (left / state.ttlMs) * 100, text: countdown(left) }
+    ? { icon: '⏳', percent: 100 - (left / ttlMs) * 100, text: countdown(left) }
     : { icon: '⏳', percent: 100, text: 'scaduta' }
 }
 
@@ -168,8 +177,94 @@ function segments(): Segment[] {
   return list
 }
 
+function isTruthy(value: string | undefined): boolean {
+  return value !== undefined && ['1', 'true', 'yes', 'on'].includes(value.trim().toLowerCase())
+}
+
+function asTtl(value: unknown): Ttl | undefined {
+  return value === '5m' || value === '1h' ? value : undefined
+}
+
+// Mirrors Claude Code's own order: FORCE_PROMPT_CACHING_5M, CLAUDE_CODE_PROMPT_CACHE_TTL,
+// the promptCacheTtl setting, ENABLE_PROMPT_CACHING_1H, then automatic
+// (1 hour on a subscription within its limits, 5 minutes otherwise)
+async function resolveTtl($: EngineInterface): Promise<void> {
+  if (isTruthy(await $.env.get('FORCE_PROMPT_CACHING_5M'))) {
+    state.ttl = '5m'
+    state.ttlSource = 'force'
+    return
+  }
+  const fromEnv = asTtl(await $.env.get('CLAUDE_CODE_PROMPT_CACHE_TTL'))
+  if (fromEnv) {
+    state.ttl = fromEnv
+    state.ttlSource = 'env'
+    return
+  }
+  const fromSetting = asTtl((await $.settings.read()).promptCacheTtl)
+  if (fromSetting) {
+    state.ttl = fromSetting
+    state.ttlSource = 'setting'
+    return
+  }
+  if (isTruthy(await $.env.get('ENABLE_PROMPT_CACHING_1H'))) {
+    state.ttl = '1h'
+    state.ttlSource = 'enable-1h'
+    return
+  }
+  const limits = state.usage?.rateLimits ?? []
+  const isSubscription = limits.length > 0
+  const isWithinLimits = limits.every(limit => limit.percentUsed < 100)
+  state.ttl = isSubscription && isWithinLimits ? '1h' : '5m'
+  state.ttlSource = 'auto'
+}
+
+async function userSettingsPath($: EngineInterface): Promise<string | undefined> {
+  const configDir = await $.env.get('CLAUDE_CONFIG_DIR')
+  if (configDir) return `${configDir}/settings.json`
+  const home = (await $.env.get('USERPROFILE')) || (await $.env.get('HOME'))
+  return home ? `${home}/.claude/settings.json` : undefined
+}
+
+// Writes promptCacheTtl to the user settings.json, which Claude Code reloads on change
+async function switchTtl($: EngineInterface): Promise<void> {
+  await resolveTtl($)
+  if (state.ttlSource === 'force' || state.ttlSource === 'env') {
+    $.ui.toast(`Durata cache bloccata da ${state.ttlSource === 'force' ? 'FORCE_PROMPT_CACHING_5M' : 'CLAUDE_CODE_PROMPT_CACHE_TTL'}`)
+    return
+  }
+
+  const target: Ttl = state.ttl === '5m' ? '1h' : '5m'
+  const path = await userSettingsPath($)
+  if (!path) {
+    $.ui.toast('Impossibile trovare settings.json')
+    return
+  }
+
+  let settings: Record<string, unknown> = {}
+  if (await $.fs.exists(path)) {
+    try {
+      const parsed: unknown = JSON.parse(await $.fs.read(path))
+      if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('not an object')
+      settings = parsed as Record<string, unknown>
+    } catch {
+      $.ui.toast('settings.json non valido: durata cache non modificata')
+      return
+    }
+  }
+  await $.fs.write(path, `${JSON.stringify({ ...settings, promptCacheTtl: target }, null, 2)}\n`)
+
+  await resolveTtl($)
+  // A project or local settings file can still hold its own promptCacheTtl, which wins over the user's
+  $.ui.toast(
+    state.ttl === target
+      ? `Durata cache: ${target} (dalla prossima richiesta)`
+      : `Salvato ${target}, ma un'impostazione di progetto impone ${state.ttl}`,
+  )
+  $.ui.invalidate('ui.render')
+}
+
 function draw($: EngineInterface, e: RenderInput): RenderElement {
-  const { Box, Text } = $.ui.resolve(e)
+  const { Box, Text, Button } = $.ui.resolve(e)
   const children: RenderElement[] = []
 
   segments().forEach((segment, i) => {
@@ -187,7 +282,20 @@ function draw($: EngineInterface, e: RenderInput): RenderElement {
     )
   })
 
-  return Box({ flexDirection: 'row', children: [Text({ wrap: 'truncate-end', children })] })
+  const isLocked = state.ttlSource === 'force' || state.ttlSource === 'env'
+  // Last in the row, so it sits right before the engine's own [-] collapse mark
+  const ttlControl = isLocked
+    ? Text({ dimColor: true, children: [`🔒 ${state.ttl}`] })
+    : Button({ key: 'ttl', label: `⇄ ${state.ttl}`, plain: true, onPress: () => void switchTtl($) })
+
+  return Box({
+    flexDirection: 'row',
+    columnGap: 1,
+    children: [
+      Box({ flexShrink: 1, children: [Text({ wrap: 'truncate-end', children })] }),
+      Box({ flexShrink: 0, children: [ttlControl] }),
+    ],
+  })
 }
 
 async function tick($: EngineInterface): Promise<void> {
@@ -196,7 +304,6 @@ async function tick($: EngineInterface): Promise<void> {
 }
 
 export const register: Register = (on, options) => {
-  state.ttlMs = options.cacheTtl === '1h' ? TTL_MS['1h'] : TTL_MS['5m']
   const locale = typeof options.locale === 'string' ? options.locale.trim() : ''
   if (locale !== '') state.dates = intlFormatter(locale)
 
@@ -205,6 +312,7 @@ export const register: Register = (on, options) => {
     if (locale === '') state.dates = await systemFormatter($)
     state.usage = await $.session.usage()
     state.model = await $.session.model()
+    await resolveTtl($)
     await tick($)
     // 1 s tick drives the cache countdown; the other figures arrive via session.measure
     $.clock.every(1000, () => void tick($))
@@ -213,20 +321,32 @@ export const register: Register = (on, options) => {
 
   on('session.measure', async ($, e, next) => {
     state.usage = { context: e.context, rateLimits: e.rateLimits, cost: e.cost }
+    // Automatic TTL depends on the plan limits
+    await resolveTtl($)
     await tick($)
     return next(e)
   })
 
   on('turn.step', async function* ($, e, next) {
+    if (e.agentId === undefined) await resolveTtl($)
+    const ttlForRequest = state.ttl
     const result = yield* next(e)
     if (e.agentId === undefined) {
       state.lastResponseAt = await $.clock.now()
+      state.requestTtl = ttlForRequest
       state.model = await $.session.model()
       if (e.effort !== undefined) state.effort = String(e.effort)
       await tick($)
     }
     return result
   })
+
+  // settings.json edited by hand or by another session
+  on('classic.ConfigChange', async ($, e, next) => {
+    await resolveTtl($)
+    $.ui.invalidate('ui.render')
+    return next(e)
+  }).catch(($, e, next) => next(e))
 
   // /clear starts a new conversation, so the previous cache prefix is no longer reused
   on('session.end', async ($, e, next) => {

@@ -16,7 +16,8 @@ The thresholds are `WARNING_FROM` and `ERROR_FROM` at the top of `hooks/register
 
 | Segment | Source | Refreshed |
 |---|---|---|
-| ⏳ Cache | Time of the last main-loop API response (`turn.step` hook) plus `cacheTtl` | Every second (`$.clock.every` + `$.ui.invalidate`) |
+| ⏳ Cache | Time of the last main-loop API response (`turn.step` hook) plus the TTL that request used | Every second (`$.clock.every` + `$.ui.invalidate`) |
+| ⇄ TTL | Same order Claude Code uses (below) | Session start, each request, each plan-limit change, each `settings.json` change |
 | 🧠 Context | `context.percent` | `session.measure` |
 | 🕒 5-hour limit | `rateLimits` entry `five_hour` (`percentUsed`, `resetsAt`) | `session.measure` |
 | 📅 Weekly limit | `rateLimits` entry `seven_day` | `session.measure` |
@@ -51,7 +52,19 @@ Anthropic's prompt cache keeps a prefix for a fixed time (5 minutes by default, 
 - shows `scaduta` when the time is up: the next request will write the cache again (higher cost, slower first token);
 - resets to `--:--` after `/clear`, which starts a new conversation.
 
-The countdown is an estimate computed on the client: it assumes the prefix was cached by the last request and that the server TTL matches `cacheTtl`.
+The countdown is an estimate computed on the client: it assumes the prefix was cached by the last request with the TTL in effect at that moment. Switching TTL does not change the entry already cached: the countdown follows the new value from the next request on.
+
+### Which TTL is in effect
+
+The mod resolves the TTL in the same order as Claude Code:
+
+1. `FORCE_PROMPT_CACHING_5M` → `5m` (locked)
+2. `CLAUDE_CODE_PROMPT_CACHE_TTL` → its value (locked)
+3. `promptCacheTtl` in the merged settings
+4. `ENABLE_PROMPT_CACHING_1H` → `1h`
+5. Automatic: `1h` when plan limits are reported and none is exhausted (a subscription within its limits), `5m` otherwise
+
+Before the first response of a session no plan limit is known yet, so an automatic TTL reads `5m` until then.
 
 ## Cost
 

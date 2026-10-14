@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.0 — 2026-10-14
+
+- ⇄ button at the end of the bar switches Claude Code's prompt cache TTL between 5m and 1h (`promptCacheTtl` in `settings.json`); 🔒 when an environment variable fixes it.
+- The ⏳ countdown follows the TTL Claude Code actually uses (env variables, `promptCacheTtl`, automatic 1h on subscriptions) and the TTL of the last request.
+- The `cacheTtl` plugin option is removed; installers' `-CacheTtl` / `--cache-ttl` now set `promptCacheTtl` and clean up the old option.
+
 ## 1.2.0 — 2026-10-14
 
 - Weekly reset shows date and time.

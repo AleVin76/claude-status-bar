@@ -3,7 +3,7 @@
 A [Claude Code mod](https://code.claude.com/docs/it/plugins/mods/overview) that adds a single colored status row directly above the prompt with everything you need to keep an eye on during a session:
 
 ```
-⏳ ███████░░░ 3:41 | 🧠 █░░░░░░░░░ 6.00% | 🕒 █░░░░░░░░░ 5.00% (11:00) | 📅 ░░░░░░░░░░ 1.00% (20/10 11:00) | 🤖 Opus 5.5 medium | 💲 1.23
+⏳ ███████░░░ 3:41 | 🧠 █░░░░░░░░░ 6.00% | 🕒 █░░░░░░░░░ 5.00% (11:00) | 📅 ░░░░░░░░░░ 1.00% (20/10 11:00) | 🤖 Opus 5.5 medium | 💲 1.23   ⇄ 1h [-]
 ```
 
 | Segment | Meaning |
@@ -14,6 +14,7 @@ A [Claude Code mod](https://code.claude.com/docs/it/plugins/mods/overview) that 
 | 📅 | Weekly plan limit, with reset date and time |
 | 🤖 | Model and reasoning effort |
 | 💲 | What the session would have cost at API prices, in US dollars |
+| ⇄ 1h | Prompt cache TTL in use: click (or Tab + Enter) to switch between `5m` and `1h`. Shows 🔒 when an environment variable fixes it |
 
 Bars turn **green** below 50%, **yellow** from 50% and **red** from 80%. The ⏳ bar drains as the cache ages and changes color on the elapsed share. Colors follow your Claude Code theme (`success`, `warning`, `error`). Reset dates and times follow the operating system's regional settings.
 
@@ -43,7 +44,7 @@ The installer:
 1. checks the Claude Code version;
 2. registers this repository as a plugin marketplace (or refreshes it);
 3. installs the `statusbar` mod (or updates it if already installed);
-4. removes the old `statusLine` entry from `~/.claude/settings.json`, after saving a timestamped backup next to it.
+4. edits `~/.claude/settings.json`, after saving a timestamped backup next to it: removes the old `statusLine`, sets `promptCacheTtl` when `-CacheTtl` is given, and drops the `cacheTtl` option used by versions before 1.3.0.
 
 Restart Claude Code, or run `/reload-plugins` in an open session.
 
@@ -51,7 +52,7 @@ Installer options:
 
 | PowerShell | Bash | Environment variable (one-liner) | Effect |
 |---|---|---|---|
-| `-CacheTtl 1h` | `--cache-ttl 1h` | `CSB_CACHE_TTL=1h` | Countdown for the 1-hour prompt cache (default `5m`) |
+| `-CacheTtl 1h` | `--cache-ttl 1h` | `CSB_CACHE_TTL=1h` | Sets Claude Code's prompt cache TTL (`promptCacheTtl`) to `5m` or `1h`. Left out, the current setting is kept |
 | `-KeepStatusLine` | `--keep-statusline` | `CSB_KEEP_STATUSLINE=1` | Leave `statusLine` in `settings.json` untouched |
 | — | — | `CSB_SOURCE=<owner/repo or path>` | Install from a fork or a local clone |
 
