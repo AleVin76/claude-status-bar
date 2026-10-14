@@ -283,17 +283,21 @@ function draw($: EngineInterface, e: RenderInput): RenderElement {
   })
 
   const isLocked = state.ttlSource === 'force' || state.ttlSource === 'env'
-  // Last in the row, so it sits right before the engine's own [-] collapse mark
+  // Last in the row, right before the engine's own [-] collapse mark
   const ttlControl = isLocked
     ? Text({ dimColor: true, children: [`🔒 ${state.ttl}`] })
     : Button({ key: 'ttl', label: `⇄ ${state.ttl}`, plain: true, onPress: () => void switchTtl($) })
 
+  // Full band width with the segments growing into the free space, so the switch sits at the right edge
   return Box({
+    key: 'statusbar-row',
     flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
     columnGap: 1,
     children: [
-      Box({ flexShrink: 1, children: [Text({ wrap: 'truncate-end', children })] }),
-      Box({ flexShrink: 0, children: [ttlControl] }),
+      Box({ flexGrow: 1, flexShrink: 1, children: [Text({ wrap: 'truncate-end', children })] }),
+      Box({ key: 'ttl-switch', flexShrink: 0, children: [ttlControl] }),
     ],
   })
 }

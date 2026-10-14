@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.1 — 2026-10-14
+
+- The ⇄ cache TTL switch is aligned to the right edge of the row.
+
 ## 1.3.0 — 2026-10-14
 
 - ⇄ button at the end of the bar switches Claude Code's prompt cache TTL between 5m and 1h (`promptCacheTtl` in `settings.json`); 🔒 when an environment variable fixes it.

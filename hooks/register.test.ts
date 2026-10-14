@@ -105,6 +105,19 @@ test('automatic TTL is 1h on a subscription within its limits', async ($, on) =>
   expect((await ui.find({ type: 'Button', key: 'ttl' }))?.props.label).toBe('⇄ 1h')
 })
 
+for (const surface of ['terminal', 'desktop'] as const) {
+  test(`the switch is right-aligned on ${surface}`, async ($, on) => {
+    world(on)
+    await $.session.measure(measure)
+
+    const ui = await $.ui.mount({ plugin: 'statusbar', surface, component: 'AbovePrompt', props: bandProps })
+    const row = await ui.find({ type: 'Box', key: 'statusbar-row' })
+    expect(row?.props).toMatchObject({ width: '100%', justifyContent: 'space-between', flexDirection: 'row' })
+    const boxes = await ui.findAll({ type: 'Box' })
+    expect(boxes.at(-1)?.key).toBe('ttl-switch')
+  })
+}
+
 test('the switch writes promptCacheTtl and keeps the other settings', async ($, on) => {
   const files = world(on, { files: { [SETTINGS_PATH]: JSON.stringify({ theme: 'dark', promptCacheTtl: '1h' }) } })
   await $.session.measure(measure)

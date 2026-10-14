@@ -3,7 +3,7 @@
 A [Claude Code mod](https://code.claude.com/docs/it/plugins/mods/overview) that adds a single colored status row directly above the prompt with everything you need to keep an eye on during a session:
 
 ```
-⏳ ███████░░░ 3:41 | 🧠 █░░░░░░░░░ 6.00% | 🕒 █░░░░░░░░░ 5.00% (11:00) | 📅 ░░░░░░░░░░ 1.00% (20/10 11:00) | 🤖 Opus 5.5 medium | 💲 1.23   ⇄ 1h [-]
+⏳ ███████░░░ 3:41 | 🧠 █░░░░░░░░░ 6.00% | 🕒 █░░░░░░░░░ 5.00% (11:00) | 📅 ░░░░░░░░░░ 1.00% (20/10 11:00) | 🤖 Opus 5.5 medium | 💲 1.23          ⇄ 1h [-]
 ```
 
 | Segment | Meaning |
@@ -14,7 +14,7 @@ A [Claude Code mod](https://code.claude.com/docs/it/plugins/mods/overview) that 
 | 📅 | Weekly plan limit, with reset date and time |
 | 🤖 | Model and reasoning effort |
 | 💲 | What the session would have cost at API prices, in US dollars |
-| ⇄ 1h | Prompt cache TTL in use: click (or Tab + Enter) to switch between `5m` and `1h`. Shows 🔒 when an environment variable fixes it |
+| ⇄ 1h | Right-aligned at the end of the row. Prompt cache TTL in use: click (or Tab + Enter) to switch between `5m` and `1h`. Shows 🔒 when an environment variable fixes it |
 
 Bars turn **green** below 50%, **yellow** from 50% and **red** from 80%. The ⏳ bar drains as the cache ages and changes color on the elapsed share. Colors follow your Claude Code theme (`success`, `warning`, `error`). Reset dates and times follow the operating system's regional settings.
 
