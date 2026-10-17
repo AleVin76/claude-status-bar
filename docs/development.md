@@ -16,6 +16,16 @@ scripts/
 docs/                Documentation
 ```
 
+## Add a menu action
+
+Menu actions are the entries returned by `menuItems()` in `hooks/register.ts`:
+
+```ts
+{ key: 'my-action', label: '✱ My action', onPress: async () => { /* ... */ } }
+```
+
+An item without `onPress` is drawn dimmed and cannot be chosen. The menu closes before `onPress` runs.
+
 ## Run from a working copy
 
 ```bash

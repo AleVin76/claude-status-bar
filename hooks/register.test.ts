@@ -102,11 +102,12 @@ test('automatic TTL is 1h on a subscription within its limits', async ($, on) =>
   await $.session.measure(measure)
 
   const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
-  expect((await ui.find({ type: 'Button', key: 'ttl' }))?.props.label).toBe('⇄ 1h')
+  await ui.press({ key: 'menu' })
+  expect((await ui.find({ type: 'Button', key: 'ttl' }))?.props.label).toBe('⇄ Cache 1h → 5m')
 })
 
 for (const surface of ['terminal', 'desktop'] as const) {
-  test(`the switch is right-aligned on ${surface}`, async ($, on) => {
+  test(`the menu button is right-aligned on ${surface}`, async ($, on) => {
     world(on)
     await $.session.measure(measure)
 
@@ -114,20 +115,27 @@ for (const surface of ['terminal', 'desktop'] as const) {
     const row = await ui.find({ type: 'Box', key: 'statusbar-row' })
     expect(row?.props).toMatchObject({ width: '100%', justifyContent: 'space-between', flexDirection: 'row' })
     const boxes = await ui.findAll({ type: 'Box' })
-    expect(boxes.at(-1)?.key).toBe('ttl-switch')
+    expect(boxes.at(-1)?.key).toBe('menu-button')
+    expect((await ui.find({ type: 'Button', key: 'menu' }))?.props.label).toBe('☰')
+    // The menu items stay hidden until the symbol is pressed
+    expect(await ui.find({ type: 'Button', key: 'ttl' })).toBeUndefined()
   })
 }
 
-test('the switch writes promptCacheTtl and keeps the other settings', async ($, on) => {
+test('the cache menu item writes promptCacheTtl and keeps the other settings', async ($, on) => {
   const files = world(on, { files: { [SETTINGS_PATH]: JSON.stringify({ theme: 'dark', promptCacheTtl: '1h' }) } })
   await $.session.measure(measure)
 
   const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
+  await ui.press({ key: 'menu' })
   await ui.press({ key: 'ttl' })
 
   expect(JSON.parse(files[SETTINGS_PATH] ?? '{}')).toEqual({ theme: 'dark', promptCacheTtl: '5m' })
-  expect((await ui.find({ type: 'Button', key: 'ttl' }))?.props.label).toBe('⇄ 5m')
+  // A choice closes the menu
+  expect(await ui.find({ type: 'Button', key: 'ttl' })).toBeUndefined()
 
+  await ui.press({ key: 'menu' })
+  expect((await ui.find({ type: 'Button', key: 'ttl' }))?.props.label).toBe('⇄ Cache 5m → 1h')
   await ui.press({ key: 'ttl' })
   expect(JSON.parse(files[SETTINGS_PATH] ?? '{}').promptCacheTtl).toBe('1h')
 })
@@ -137,19 +145,21 @@ test('an invalid settings.json is left untouched', async ($, on) => {
   await $.session.measure(measure)
 
   const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
+  await ui.press({ key: 'menu' })
   await ui.press({ key: 'ttl' })
   expect(files[SETTINGS_PATH]).toBe('{ broken')
 })
 
 for (const [variable, value, shown] of [
-  ['CLAUDE_CODE_PROMPT_CACHE_TTL', '5m', '🔒 5m'],
-  ['FORCE_PROMPT_CACHING_5M', '1', '🔒 5m'],
+  ['CLAUDE_CODE_PROMPT_CACHE_TTL', '5m', '🔒 Cache 5m (CLAUDE_CODE_PROMPT_CACHE_TTL)'],
+  ['FORCE_PROMPT_CACHING_5M', '1', '🔒 Cache 5m (FORCE_PROMPT_CACHING_5M)'],
 ] as const) {
-  test(`${variable} locks the switch`, async ($, on) => {
+  test(`${variable} locks the cache menu item`, async ($, on) => {
     world(on, { env: { [variable]: value } })
     await $.session.measure(measure)
 
     const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
+    await ui.press({ key: 'menu' })
     expect(await ui.find({ type: 'Button', key: 'ttl' })).toBeUndefined()
     expect(await ui.find({ type: 'Text', text: shown })).toBeDefined()
   })
@@ -273,3 +283,18 @@ for (const [sessionId, expected] of [['s1', true], ['s2', false]] as const) {
     expect((await ui.findAll({ type: 'Text' })).some(t => t.text === 'me')).toBe(expected)
   })
 }
+
+test('the menu closes with Chiudi or a second press of the symbol', async ($, on) => {
+  world(on)
+  await $.session.measure(measure)
+  const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
+
+  await ui.press({ key: 'menu' })
+  expect(await ui.find({ type: 'Box', key: 'menu-items' })).toBeDefined()
+  await ui.press({ key: 'menu-close' })
+  expect(await ui.find({ type: 'Box', key: 'menu-items' })).toBeUndefined()
+
+  await ui.press({ key: 'menu' })
+  await ui.press({ key: 'menu' })
+  expect(await ui.find({ type: 'Box', key: 'menu-items' })).toBeUndefined()
+})

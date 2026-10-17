@@ -36,11 +36,11 @@ The cache duration is Claude Code's own setting, not an option of the mod: the m
 
 | How | Effect |
 |---|---|
-| **⇄ button** on the bar | Switches between `5m` and `1h` by writing `promptCacheTtl` to `~/.claude/settings.json`. Applies from the next request |
+| **☰ menu → ⇄ Cache** on the bar | Switches between `5m` and `1h` by writing `promptCacheTtl` to `~/.claude/settings.json`. Applies from the next request |
 | `"promptCacheTtl": "5m"` or `"1h"` in `settings.json` | Same, by hand |
 | Installer `-CacheTtl` / `--cache-ttl` | Same, at install time |
-| Env `CLAUDE_CODE_PROMPT_CACHE_TTL=5m` / `1h` | Wins over the setting; the bar shows 🔒 and the button is disabled |
-| Env `FORCE_PROMPT_CACHING_5M=1` | Forces 5 minutes over everything; the bar shows 🔒 |
+| Env `CLAUDE_CODE_PROMPT_CACHE_TTL=5m` / `1h` | Wins over the setting; the menu item shows 🔒 and cannot be chosen |
+| Env `FORCE_PROMPT_CACHING_5M=1` | Forces 5 minutes over everything; the menu item shows 🔒 |
 | Nothing set | Automatic: 1 hour on a Claude subscription within its limits, 5 minutes with an API key, Bedrock, Vertex or Foundry |
 
 The 1-hour cache keeps the prefix warm across longer pauses, but with an API key its writes are billed at a higher rate.

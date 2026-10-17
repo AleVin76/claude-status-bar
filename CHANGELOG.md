@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.0 — 2026-10-17
+
+- ☰ menu at the right end of the bar: opens a row of actions under it, closed by a choice, **Chiudi** or a second press. The cache TTL switch moved into it (`⇄ Cache 1h → 5m`).
+
 ## 1.5.3 — 2026-10-17
 
 - Fix: 🤖 could show the `effortLevel` from `settings.json` (e.g. `xh`) instead of the effort actually in use. The bar now shows only the effort Claude Code sends with each request, and keeps it across reloads of the mod in the same session.

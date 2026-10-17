@@ -324,6 +324,30 @@ async function switchTtl($: EngineInterface): Promise<void> {
   $.ui.invalidate('ui.render')
 }
 
+const MENU_SYMBOL = '☰'
+
+// Whether the menu row under the bar is shown; closes again after any choice
+let menuOpen = false
+
+type MenuItem = {
+  key: string
+  label: string
+  // Absent: the item is shown dimmed and cannot be chosen
+  onPress?: () => Promise<void> | void
+}
+
+// New actions go here: each becomes one entry of the menu row
+function menuItems($: EngineInterface): MenuItem[] {
+  const other: Ttl = state.ttl === '5m' ? '1h' : '5m'
+  const isLocked = state.ttlSource === 'force' || state.ttlSource === 'env'
+  const lockedBy = state.ttlSource === 'force' ? 'FORCE_PROMPT_CACHING_5M' : 'CLAUDE_CODE_PROMPT_CACHE_TTL'
+  return [
+    isLocked
+      ? { key: 'ttl', label: `🔒 Cache ${state.ttl} (${lockedBy})` }
+      : { key: 'ttl', label: `⇄ Cache ${state.ttl} → ${other}`, onPress: () => switchTtl($) },
+  ]
+}
+
 function draw($: EngineInterface, e: RenderInput): RenderElement {
   const { Box, Text, Button } = $.ui.resolve(e)
   const children: RenderElement[] = []
@@ -347,14 +371,9 @@ function draw($: EngineInterface, e: RenderInput): RenderElement {
     )
   })
 
-  const isLocked = state.ttlSource === 'force' || state.ttlSource === 'env'
-  // Last in the row, right before the engine's own [-] collapse mark
-  const ttlControl = isLocked
-    ? Text({ dimColor: true, children: [`🔒 ${state.ttl}`] })
-    : Button({ key: 'ttl', label: `⇄ ${state.ttl}`, plain: true, onPress: () => void switchTtl($) })
-
-  // Full band width with the segments growing into the free space, so the switch sits at the right edge
-  return Box({
+  // Full band width with the segments growing into the free space, so the menu button sits at the right edge,
+  // right before the engine's own [-] collapse mark
+  const row = Box({
     key: 'statusbar-row',
     flexDirection: 'row',
     width: '100%',
@@ -362,7 +381,65 @@ function draw($: EngineInterface, e: RenderInput): RenderElement {
     columnGap: 1,
     children: [
       Box({ flexGrow: 1, flexShrink: 1, children: [Text({ wrap: 'truncate-end', children })] }),
-      Box({ key: 'ttl-switch', flexShrink: 0, children: [ttlControl] }),
+      Box({
+        key: 'menu-button',
+        flexShrink: 0,
+        children: [
+          Button({
+            key: 'menu',
+            label: MENU_SYMBOL,
+            plain: true,
+            onPress: () => {
+              menuOpen = !menuOpen
+              $.ui.invalidate('ui.render')
+            },
+          }),
+        ],
+      }),
+    ],
+  })
+  if (!menuOpen) return row
+
+  const items = menuItems($).map(item =>
+    item.onPress
+      ? Button({
+          key: item.key,
+          label: item.label,
+          plain: true,
+          onPress: () => {
+            menuOpen = false
+            $.ui.invalidate('ui.render')
+            void item.onPress?.()
+          },
+        })
+      : Text({ dimColor: true, children: [item.label] }),
+  )
+
+  return Box({
+    flexDirection: 'column',
+    width: '100%',
+    children: [
+      row,
+      Box({
+        key: 'menu-items',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-end',
+        columnGap: 3,
+        children: [
+          ...items,
+          Button({
+            key: 'menu-close',
+            label: 'Chiudi',
+            plain: true,
+            dimColor: true,
+            onPress: () => {
+              menuOpen = false
+              $.ui.invalidate('ui.render')
+            },
+          }),
+        ],
+      }),
     ],
   })
 }
