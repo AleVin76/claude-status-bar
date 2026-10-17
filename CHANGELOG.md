@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.3 — 2026-10-17
+
+- Fix: 🤖 could show the `effortLevel` from `settings.json` (e.g. `xh`) instead of the effort actually in use. The bar now shows only the effort Claude Code sends with each request, and keeps it across reloads of the mod in the same session.
+
 ## 1.5.2 — 2026-10-17
 
 - 🤖 effort shown from session start (`CLAUDE_CODE_EFFORT_LEVEL` or the `effortLevel` setting) and updated when a request starts, instead of only after the first answer; `/effort` changes show at once.

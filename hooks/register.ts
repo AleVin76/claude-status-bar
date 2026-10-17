@@ -235,15 +235,18 @@ function asTtl(value: unknown): Ttl | undefined {
 // Mirrors Claude Code's own order: FORCE_PROMPT_CACHING_5M, CLAUDE_CODE_PROMPT_CACHE_TTL,
 // the promptCacheTtl setting, ENABLE_PROMPT_CACHING_1H, then automatic
 // (1 hour on a subscription within its limits, 5 minutes otherwise)
-const EFFORT_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max']
+// Only the engine knows the effort in use: it depends on /effort, --effort, per-model settings
+// and model defaults. The bar shows what the last request reported, kept across reloads of the mod
+type SavedEffort = { sessionId: string; model: string; effort: string }
 
-// Effort configured for the session, known before any request: CLAUDE_CODE_EFFORT_LEVEL, then the
-// effortLevel setting that /effort and /model persist. A request's own effort replaces it.
-async function configuredEffort($: EngineInterface): Promise<string | undefined> {
-  const fromEnv = (await $.env.get('CLAUDE_CODE_EFFORT_LEVEL'))?.trim().toLowerCase()
-  if (fromEnv && EFFORT_LEVELS.includes(fromEnv)) return fromEnv
-  const fromSetting = (await $.settings.read()).effortLevel
-  return typeof fromSetting === 'string' && EFFORT_LEVELS.includes(fromSetting) ? fromSetting : undefined
+async function restoreEffort($: EngineInterface): Promise<void> {
+  const saved = (await $.store.get('effort')) as SavedEffort | undefined
+  if (saved && saved.sessionId === (await $.session.id()) && saved.model === state.model) state.effort = saved.effort
+}
+
+async function saveEffort($: EngineInterface, effort: string): Promise<void> {
+  const value: SavedEffort = { sessionId: await $.session.id(), model: state.model ?? '', effort }
+  await $.store.set('effort', value)
 }
 
 async function resolveTtl($: EngineInterface): Promise<void> {
@@ -380,7 +383,7 @@ export const register: Register = (on, options) => {
     if (locale === '') state.dates = await systemFormatter($)
     state.usage = await $.session.usage()
     state.model = await $.session.model()
-    state.effort ??= await configuredEffort($)
+    if (state.effort === undefined) await restoreEffort($)
     await resolveTtl($)
     await tick($)
     // 1 s tick drives the cache countdown; the other figures arrive via session.measure
@@ -402,7 +405,9 @@ export const register: Register = (on, options) => {
       // The request's effort is known before it is sent: show it now, not when the answer ends
       if (e.effort !== undefined) {
         state.effort = String(e.effort)
+        state.model = await $.session.model()
         $.ui.invalidate('ui.render')
+        await saveEffort($, state.effort)
       }
     }
     const ttlForRequest = state.ttl
@@ -419,9 +424,6 @@ export const register: Register = (on, options) => {
   // settings.json edited by hand or by another session
   on('classic.ConfigChange', async ($, e, next) => {
     await resolveTtl($)
-    // /effort and /model persist the level in settings.json
-    const effort = await configuredEffort($)
-    if (effort) state.effort = effort
     $.ui.invalidate('ui.render')
     return next(e)
   }).catch(($, e, next) => next(e))

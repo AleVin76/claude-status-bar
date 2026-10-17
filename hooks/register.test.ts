@@ -1,5 +1,5 @@
 import type { On, SessionMeasureInput } from 'claude-code'
-import { expect, mock, test } from 'claude-code/testing'
+import { expect, mock, test, type Engine } from 'claude-code/testing'
 
 const measure: SessionMeasureInput = {
   context: { window: 200_000, tokens: 170_123, percent: 85 },
@@ -246,18 +246,30 @@ for (const [effort, color, bold] of [
   })
 }
 
-for (const [source, world_, expected] of [
-  ['the effortLevel setting', { files: { [SETTINGS_PATH]: JSON.stringify({ effortLevel: 'high' }) } }, 'hi'],
-  ['CLAUDE_CODE_EFFORT_LEVEL', { env: { CLAUDE_CODE_EFFORT_LEVEL: 'max' }, files: { [SETTINGS_PATH]: JSON.stringify({ effortLevel: 'low' }) } }, 'ma'],
-] as const) {
-  test(`effort from ${source} shows before the first request`, async ($, on) => {
-    world(on, world_)
-    on('session.start', async (_$, e) => e)
-    on('session.usage', async () => ({ value: { startedAt: 0, context: { window: 200_000 }, rateLimits: [] } }))
-    on('session.model', async () => ({ value: 'Opus 5.5' }))
-    await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+async function startSession($: Engine, on: On, sessionId = 's1'): Promise<void> {
+  on('session.start', async (_$, e) => e)
+  on('session.usage', async () => ({ value: { startedAt: 0, context: { window: 200_000 }, rateLimits: [] } }))
+  on('session.model', async () => ({ value: 'Opus 5.5' }))
+  on('session.id', async () => ({ value: sessionId }))
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+}
+
+test('the effortLevel setting is not taken as the effort in use', async ($, on) => {
+  world(on, { files: { [SETTINGS_PATH]: JSON.stringify({ effortLevel: 'xhigh' }) } })
+  mock.store(on)
+  await startSession($, on)
+
+  const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
+  expect((await ui.findAll({ type: 'Text' })).some(t => t.text === 'xh')).toBe(false)
+})
+
+for (const [sessionId, expected] of [['s1', true], ['s2', false]] as const) {
+  test(`the last reported effort is ${expected ? '' : 'not '}restored in ${sessionId === 's1' ? 'the same' : 'another'} session`, async ($, on) => {
+    world(on)
+    mock.store(on, { effort: { sessionId: 's1', model: 'Opus 5.5', effort: 'medium' } })
+    await startSession($, on, sessionId)
 
     const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
-    expect((await ui.findAll({ type: 'Text', text: expected })).some(t => t.text === expected)).toBe(true)
+    expect((await ui.findAll({ type: 'Text' })).some(t => t.text === 'me')).toBe(expected)
   })
 }
