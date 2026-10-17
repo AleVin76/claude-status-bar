@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.2 — 2026-10-17
+
+- 🧠 context usage computed from the token counts, so its two decimals are exact (Claude Code's own figure is a whole number).
+
 ## 1.4.1 — 2026-10-17
 
 - Reached limits show the bare countdown, without the `reset tra` label.

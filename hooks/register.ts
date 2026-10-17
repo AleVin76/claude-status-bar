@@ -149,6 +149,12 @@ function resetLabel(limit: SessionRateLimit): string {
   return ` (${limit.kind === 'five_hour' ? state.dates.time(date) : state.dates.dateTime(date)})`
 }
 
+// Claude Code rounds context.percent to a whole number: recompute it from the token counts
+function contextPercent(context: SessionUsage['context']): number {
+  const { tokens, window } = context
+  return tokens !== undefined && window > 0 ? (tokens / window) * 100 : (context.percent ?? 0)
+}
+
 function limitSegment(icon: string, limit: SessionRateLimit | undefined): Segment | undefined {
   if (!limit) return undefined
   // Limit reached: the only useful figure is how long until the window resets
@@ -174,7 +180,7 @@ function segments(): Segment[] {
   const { usage, model, effort } = state
 
   if (usage) {
-    const context = usage.context.percent ?? 0
+    const context = contextPercent(usage.context)
     list.push({ icon: '🧠', percent: context, text: pct(context) })
     const fiveHour = limitSegment('🕒', usage.rateLimits.find(l => l.kind === 'five_hour'))
     const weekly = limitSegment('📅', usage.rateLimits.find(l => l.kind === 'seven_day'))

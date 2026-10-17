@@ -2,7 +2,7 @@ import type { On, SessionMeasureInput } from 'claude-code'
 import { expect, mock, test } from 'claude-code/testing'
 
 const measure: SessionMeasureInput = {
-  context: { window: 200_000, tokens: 170_000, percent: 85 },
+  context: { window: 200_000, tokens: 170_123, percent: 85 },
   rateLimits: [
     { kind: 'five_hour', percentUsed: 5, resetsAt: '2026-10-14T09:00:00Z' },
     { kind: 'seven_day', percentUsed: 60, resetsAt: '2026-10-20T09:00:00Z' },
@@ -60,7 +60,7 @@ for (const surface of ['terminal', 'desktop'] as const) {
 
     const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text).join('')
     expect(texts).not.toContain('statusbar')
-    expect(texts).toContain('85.00%')
+    expect(texts).toContain('85.06%')
     expect(texts).toContain('💲 1.23')
     expect(texts).not.toContain('$')
   })

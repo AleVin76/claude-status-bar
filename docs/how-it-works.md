@@ -18,7 +18,7 @@ The thresholds are `WARNING_FROM` and `ERROR_FROM` at the top of `hooks/register
 |---|---|---|
 | ⏳ Cache | Time of the last main-loop API response (`turn.step` hook) plus the TTL that request used | Every second (`$.clock.every` + `$.ui.invalidate`) |
 | ⇄ TTL | Same order Claude Code uses (below) | Session start, each request, each plan-limit change, each `settings.json` change |
-| 🧠 Context | `context.percent` | `session.measure` |
+| 🧠 Context | `context.tokens / context.window` (Claude Code's own `context.percent` is rounded to a whole number) | `session.measure` |
 | 🕒 5-hour limit | `rateLimits` entry `five_hour` (`percentUsed`, `resetsAt`) | `session.measure` |
 | 📅 Weekly limit | `rateLimits` entry `seven_day` | `session.measure` |
 | 🤖 Model | `$.session.model()` | Session start and each request |
@@ -42,6 +42,13 @@ Reset labels show the time for the 5-hour window and date + time (without the ye
 Examples for the weekly reset: `20/10 11:00` (it-IT, `dd/MM/yyyy` + `HH:mm`), `10/20 11:00 AM` (en-US), `20.10 11:00` (de-DE).
 
 The mod's runtime does not inherit the system locale by itself, which is why it is read explicitly.
+
+## Precision of the percentages
+
+| Segment | Decimals | Why |
+|---|---|---|
+| 🧠 Context | 2, exact | Computed from the token counts |
+| 🕒 / 📅 Plan limits | As received | Anthropic reports plan usage already rounded and Claude Code keeps at most one decimal, so these usually end in `.00`. No more precise figure reaches Claude Code |
 
 ## Reached limits
 
