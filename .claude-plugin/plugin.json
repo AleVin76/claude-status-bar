@@ -1,6 +1,6 @@
 {
   "name": "statusbar",
-  "version": "1.4.4",
+  "version": "1.5.0",
   "description": "Status line: prompt cache countdown, context, plan limits, model/effort, API-equivalent cost",
   "author": {
     "name": "Alessandro Vinciguerra"

@@ -43,6 +43,18 @@ Examples for the weekly reset: `20/10 11:00` (it-IT, `dd/MM/yyyy` + `HH:mm`), `1
 
 The mod's runtime does not inherit the system locale by itself, which is why it is read explicitly.
 
+## Effort colors
+
+| Effort | Color (theme key) |
+|---|---|
+| `low` | gray (`inactive`) |
+| `medium` | green (`success`) |
+| `high` | yellow (`warning`) |
+| `xhigh` | orange (`claude`) |
+| `max` | red, bold (`error`) |
+
+A numeric effort has no named level and is shown in the default color. The mapping is `EFFORT_STYLE` at the top of `hooks/register.ts`.
+
 ## Precision of the percentages
 
 | Segment | Decimals | Why |

@@ -15,6 +15,17 @@ type Segment = {
   // Fill level of the bar and the value its color is judged on (0-100); absent for plain text
   percent?: number
   text: string
+  // Trailing word drawn in its own color (the effort level)
+  accent?: { text: string; color?: Color; bold?: boolean }
+}
+
+// Effort from weakest to strongest, on theme keys so light and dark themes both read well
+const EFFORT_STYLE: Record<string, { color: Color; bold?: boolean }> = {
+  low: { color: 'inactive' },
+  medium: { color: 'success' },
+  high: { color: 'warning' },
+  xhigh: { color: 'claude' },
+  max: { color: 'error', bold: true },
 }
 
 type Snapshot = {
@@ -203,7 +214,11 @@ function segments(): Segment[] {
     if (fiveHour) list.push(fiveHour)
     if (weekly) list.push(weekly)
   }
-  if (model) list.push({ icon: '🤖', text: `${model}${effort ? ` ${effort}` : ''}` })
+  if (model) {
+    // A numeric effort has no named level: shown in the default color
+    const style = effort ? EFFORT_STYLE[effort] : undefined
+    list.push({ icon: '🤖', text: model, ...(effort ? { accent: { text: effort, ...style } } : {}) })
+  }
   if (usage?.cost) list.push({ icon: '💲', text: usage.cost.usd.toFixed(2) })
   return list
 }
@@ -302,6 +317,10 @@ function draw($: EngineInterface, e: RenderInput): RenderElement {
     if (i > 0) children.push(Text({ dimColor: true, children: [' | '] }))
     if (segment.percent === undefined) {
       children.push(Text({ children: [`${segment.icon} ${segment.text}`] }))
+      if (segment.accent) {
+        const { text, color, bold } = segment.accent
+        children.push(Text({ children: [' '] }), Text({ color, bold, children: [text] }))
+      }
       return
     }
     // Cache bar shows time left, so it drains while its color heats up

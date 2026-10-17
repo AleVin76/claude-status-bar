@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.0 — 2026-10-17
+
+- 🤖 effort level colored by strength: low gray, medium green, high yellow, xhigh orange, max red and bold.
+
 ## 1.4.4 — 2026-10-17
 
 - Percentages have a fixed-width integer part (3 columns) and, for context usage, always 2 decimals, so the row no longer shifts as values change.

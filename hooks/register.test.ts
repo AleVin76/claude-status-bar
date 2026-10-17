@@ -214,3 +214,32 @@ test('percentages keep a fixed width', async ($, on) => {
   expect(texts).toMatch(/🕒 [█░]{10}  99\.5% \(/)
   expect(texts).toMatch(/📅 [█░]{10} \u2007\u20070% \(/)
 })
+
+for (const [effort, color, bold] of [
+  ['low', 'inactive', undefined],
+  ['medium', 'success', undefined],
+  ['high', 'warning', undefined],
+  ['xhigh', 'claude', undefined],
+  ['max', 'error', true],
+] as const) {
+  test(`effort ${effort} is drawn in ${color}`, async ($, on) => {
+    world(on)
+    on('session.model', async () => ({ value: 'Opus 5.5' }))
+    // Bottom of the stream: answers the request without a model
+    on('turn.step', async function* (_$, e) {
+      return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'end_turn' as const, usage: null }
+    })
+    await $.session.measure(measure)
+    const stream = $.turn.step({ turnId: 't1', index: 0, model: 'opus', effort, messageCount: 1 })
+    for await (const _chunk of stream) {
+      // drain
+    }
+
+    const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
+    expect(await ui.find({ type: 'Text', text: '🤖 Opus 5.5' })).toBeDefined()
+    // find matches by inclusion, so the row's outer Text matches too: take the exact word
+    const word = (await ui.findAll({ type: 'Text', text: effort })).find(t => t.text === effort)
+    expect(word?.props.color).toBe(color)
+    expect(word?.props.bold).toBe(bold)
+  })
+}

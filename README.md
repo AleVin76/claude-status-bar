@@ -12,7 +12,7 @@ A [Claude Code mod](https://code.claude.com/docs/it/plugins/mods/overview) that 
 | 🧠 | Context window usage |
 | 🕒 | 5-hour plan limit, with reset time. Once the limit is reached: time left to the reset (`2:15:30`) |
 | 📅 | Weekly plan limit, with reset date and time. Once the limit is reached: time left to the reset (`2g 3:04:05`) |
-| 🤖 | Model and reasoning effort |
+| 🤖 | Model and reasoning effort, the effort colored by strength: `low` gray, `medium` green, `high` yellow, `xhigh` orange, `max` red and bold |
 | 💲 | What the session would have cost at API prices, in US dollars |
 | ⇄ 1h | Right-aligned at the end of the row. Prompt cache TTL in use: click (or Tab + Enter) to switch between `5m` and `1h`. Shows 🔒 when an environment variable fixes it |
 
