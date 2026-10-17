@@ -45,13 +45,15 @@ The mod's runtime does not inherit the system locale by itself, which is why it 
 
 ## Effort colors
 
-| Effort | Color (theme key) |
-|---|---|
-| `low` | gray (`inactive`) |
-| `medium` | green (`success`) |
-| `high` | yellow (`warning`) |
-| `xhigh` | orange (`claude`) |
-| `max` | red, bold (`error`) |
+The effort is shown as its first two letters after the model name.
+
+| Effort | Shown | Color (theme key) |
+|---|---|---|
+| `low` | `lo` | gray (`inactive`) |
+| `medium` | `me` | green (`success`) |
+| `high` | `hi` | yellow (`warning`) |
+| `xhigh` | `xh` | orange (`claude`) |
+| `max` | `ma` | red, bold (`error`) |
 
 A numeric effort has no named level and is shown in the default color. The mapping is `EFFORT_STYLE` at the top of `hooks/register.ts`.
 

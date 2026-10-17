@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.1 — 2026-10-17
+
+- 🤖 effort shown as its first two letters (`lo`, `me`, `hi`, `xh`, `ma`), keeping its color.
+
 ## 1.5.0 — 2026-10-17
 
 - 🤖 effort level colored by strength: low gray, medium green, high yellow, xhigh orange, max red and bold.

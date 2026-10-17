@@ -217,7 +217,8 @@ function segments(): Segment[] {
   if (model) {
     // A numeric effort has no named level: shown in the default color
     const style = effort ? EFFORT_STYLE[effort] : undefined
-    list.push({ icon: '🤖', text: model, ...(effort ? { accent: { text: effort, ...style } } : {}) })
+    // Two letters keep the row short: lo, me, hi, xh, ma
+    list.push({ icon: '🤖', text: model, ...(effort ? { accent: { text: effort.slice(0, 2), ...style } } : {}) })
   }
   if (usage?.cost) list.push({ icon: '💲', text: usage.cost.usd.toFixed(2) })
   return list

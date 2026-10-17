@@ -238,7 +238,9 @@ for (const [effort, color, bold] of [
     const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
     expect(await ui.find({ type: 'Text', text: '🤖 Opus 5.5' })).toBeDefined()
     // find matches by inclusion, so the row's outer Text matches too: take the exact word
-    const word = (await ui.findAll({ type: 'Text', text: effort })).find(t => t.text === effort)
+    const short = effort.slice(0, 2)
+    const word = (await ui.findAll({ type: 'Text', text: short })).find(t => t.text === short)
+    expect((await ui.findAll({ type: 'Text' })).some(t => t.text === effort)).toBe(false)
     expect(word?.props.color).toBe(color)
     expect(word?.props.bold).toBe(bold)
   })
