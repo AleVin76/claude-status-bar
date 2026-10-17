@@ -117,6 +117,8 @@ for (const surface of ['terminal', 'desktop'] as const) {
     const boxes = await ui.findAll({ type: 'Box' })
     expect(boxes.at(-1)?.key).toBe('menu-button')
     expect((await ui.find({ type: 'Button', key: 'menu' }))?.props.label).toBe('≡')
+    const texts = await ui.findAll({ type: 'Text' })
+    expect(texts.filter(t => t.text === '[' || t.text === ']').map(t => t.props.color)).toEqual(['suggestion', 'suggestion'])
     // The menu items stay hidden until the symbol is pressed
     expect(await ui.find({ type: 'Button', key: 'ttl' })).toBeUndefined()
   })
@@ -309,5 +311,5 @@ for (const surface of ['terminal', 'desktop'] as const) test(`the menu opens upw
   const keys = boxes.map(b => b.key)
   // Document order: the menu comes before the status row, so it is drawn above it
   expect(keys.indexOf('menu-items')).toBeLessThan(keys.indexOf('statusbar-row'))
-  expect((await ui.find({ type: 'Box', key: 'menu-items' }))?.props).toMatchObject({ flexDirection: 'column', alignSelf: 'flex-end' })
+  expect((await ui.find({ type: 'Box', key: 'menu-items' }))?.props).toMatchObject({ flexDirection: 'column', alignSelf: 'flex-end', borderColor: 'suggestion' })
 })

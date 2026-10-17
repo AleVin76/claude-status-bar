@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.2 — 2026-10-17
+
+- Menu button drawn as `[≡]`; brackets and menu frame in the theme's `suggestion` color (`MENU_COLOR` in `hooks/register.ts`).
+
 ## 1.6.1 — 2026-10-17
 
 - Menu symbol is now `≡`: `☰` came from a fallback font in Windows terminals and broke the row when focused.

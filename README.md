@@ -3,7 +3,7 @@
 A [Claude Code mod](https://code.claude.com/docs/it/plugins/mods/overview) that adds a single colored status row directly above the prompt with everything you need to keep an eye on during a session:
 
 ```
-⏳ ███████░░░ 3:41 | 🧠 █░░░░░░░░░   6.00% | 🕒 █░░░░░░░░░   5% (11:00) | 📅 ░░░░░░░░░░   1% (20/10 11:00) | 🤖 Opus 5.5 me | 💲 1.23          ≡ [-]
+⏳ ███████░░░ 3:41 | 🧠 █░░░░░░░░░   6.00% | 🕒 █░░░░░░░░░   5% (11:00) | 📅 ░░░░░░░░░░   1% (20/10 11:00) | 🤖 Opus 5.5 me | 💲 1.23        [≡] [-]
 ```
 
 | Segment | Meaning |
@@ -14,7 +14,7 @@ A [Claude Code mod](https://code.claude.com/docs/it/plugins/mods/overview) that 
 | 📅 | Weekly plan limit, with reset date and time. Once the limit is reached: time left to the reset (`2g 3:04:05`) |
 | 🤖 | Model and reasoning effort as its first two letters, colored by strength: `lo` gray, `me` green, `hi` yellow, `xh` orange, `ma` red and bold |
 | 💲 | What the session would have cost at API prices, in US dollars |
-| ≡ | Menu, right-aligned at the end of the row. Click it (or Tab + Enter) to open a framed list of actions that grows upward from the bar, one per line; a choice, **Chiudi** or a second press closes it |
+| [≡] | Menu, right-aligned at the end of the row, in the theme's `suggestion` color (brackets and menu frame). Click it (or Tab + Enter) to open a framed list of actions that grows upward from the bar, one per line; a choice, **Chiudi** or a second press closes it |
 
 Menu actions:
 

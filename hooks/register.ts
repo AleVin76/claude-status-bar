@@ -327,6 +327,8 @@ async function switchTtl($: EngineInterface): Promise<void> {
 // In the CP437 set, so Windows console fonts (Consolas, Cascadia) draw it narrow, focused or not;
 // ☰ comes from a fallback font there and breaks the row when the focus inverts it
 const MENU_SYMBOL = '≡'
+// Accent for the menu (brackets and frame), distinct from the green/yellow/red/orange/gray of the bar
+const MENU_COLOR: Color = 'suggestion'
 
 // Whether the menu row under the bar is shown; closes again after any choice
 let menuOpen = false
@@ -386,7 +388,10 @@ function draw($: EngineInterface, e: RenderInput): RenderElement {
       Box({
         key: 'menu-button',
         flexShrink: 0,
+        flexDirection: 'row',
+        // A Button label takes no color: the brackets are colored Text around it
         children: [
+          Text({ color: MENU_COLOR, children: ['['] }),
           Button({
             key: 'menu',
             label: MENU_SYMBOL,
@@ -396,6 +401,7 @@ function draw($: EngineInterface, e: RenderInput): RenderElement {
               $.ui.invalidate('ui.render')
             },
           }),
+          Text({ color: MENU_COLOR, children: [']'] }),
         ],
       }),
     ],
@@ -427,7 +433,7 @@ function draw($: EngineInterface, e: RenderInput): RenderElement {
         flexDirection: 'column',
         alignItems: 'flex-end',
         borderStyle: 'round',
-        borderDimColor: true,
+        borderColor: MENU_COLOR,
         paddingX: 1,
         alignSelf: 'flex-end',
         children: [
