@@ -17,7 +17,7 @@ The thresholds are `WARNING_FROM` and `ERROR_FROM` at the top of `hooks/register
 | Segment | Source | Refreshed |
 |---|---|---|
 | ⏳ Cache | Time of the last main-loop API response (`turn.step` hook) plus the TTL that request used | Every second (`$.clock.every` + `$.ui.invalidate`) |
-| ☰ → ⇄ Cache | Same order Claude Code uses (below) | Session start, each request, each plan-limit change, each `settings.json` change |
+| ≡ → ⇄ Cache | Same order Claude Code uses (below) | Session start, each request, each plan-limit change, each `settings.json` change |
 | 🧠 Context | `context.tokens / context.window` (Claude Code's own `context.percent` is rounded to a whole number) | `session.measure` |
 | 🕒 5-hour limit | `rateLimits` entry `five_hour` (`percentUsed`, `resetsAt`) | `session.measure` |
 | 📅 Weekly limit | `rateLimits` entry `seven_day` | `session.measure` |

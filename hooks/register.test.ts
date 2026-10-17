@@ -116,7 +116,7 @@ for (const surface of ['terminal', 'desktop'] as const) {
     expect(row?.props).toMatchObject({ width: '100%', justifyContent: 'space-between', flexDirection: 'row' })
     const boxes = await ui.findAll({ type: 'Box' })
     expect(boxes.at(-1)?.key).toBe('menu-button')
-    expect((await ui.find({ type: 'Button', key: 'menu' }))?.props.label).toBe('☰')
+    expect((await ui.find({ type: 'Button', key: 'menu' }))?.props.label).toBe('≡')
     // The menu items stay hidden until the symbol is pressed
     expect(await ui.find({ type: 'Button', key: 'ttl' })).toBeUndefined()
   })
@@ -297,4 +297,17 @@ test('the menu closes with Chiudi or a second press of the symbol', async ($, on
   await ui.press({ key: 'menu' })
   await ui.press({ key: 'menu' })
   expect(await ui.find({ type: 'Box', key: 'menu-items' })).toBeUndefined()
+})
+
+for (const surface of ['terminal', 'desktop'] as const) test(`the menu opens upward, one item per line, above the bar on ${surface}`, async ($, on) => {
+  world(on)
+  await $.session.measure(measure)
+  const ui = await $.ui.mount({ plugin: 'statusbar', surface, component: 'AbovePrompt', props: bandProps })
+  await ui.press({ key: 'menu' })
+
+  const boxes = await ui.findAll({ type: 'Box' })
+  const keys = boxes.map(b => b.key)
+  // Document order: the menu comes before the status row, so it is drawn above it
+  expect(keys.indexOf('menu-items')).toBeLessThan(keys.indexOf('statusbar-row'))
+  expect((await ui.find({ type: 'Box', key: 'menu-items' }))?.props).toMatchObject({ flexDirection: 'column', alignSelf: 'flex-end' })
 })

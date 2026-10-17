@@ -36,7 +36,7 @@ The cache duration is Claude Code's own setting, not an option of the mod: the m
 
 | How | Effect |
 |---|---|
-| **☰ menu → ⇄ Cache** on the bar | Switches between `5m` and `1h` by writing `promptCacheTtl` to `~/.claude/settings.json`. Applies from the next request |
+| **≡ menu → ⇄ Cache** on the bar | Switches between `5m` and `1h` by writing `promptCacheTtl` to `~/.claude/settings.json`. Applies from the next request |
 | `"promptCacheTtl": "5m"` or `"1h"` in `settings.json` | Same, by hand |
 | Installer `-CacheTtl` / `--cache-ttl` | Same, at install time |
 | Env `CLAUDE_CODE_PROMPT_CACHE_TTL=5m` / `1h` | Wins over the setting; the menu item shows 🔒 and cannot be chosen |

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.1 — 2026-10-17
+
+- Menu symbol is now `≡`: `☰` came from a fallback font in Windows terminals and broke the row when focused.
+- The menu opens upward as a framed vertical list above the bar, one action per line, right-aligned.
+
 ## 1.6.0 — 2026-10-17
 
 - ☰ menu at the right end of the bar: opens a row of actions under it, closed by a choice, **Chiudi** or a second press. The cache TTL switch moved into it (`⇄ Cache 1h → 5m`).

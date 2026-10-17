@@ -324,7 +324,9 @@ async function switchTtl($: EngineInterface): Promise<void> {
   $.ui.invalidate('ui.render')
 }
 
-const MENU_SYMBOL = '☰'
+// In the CP437 set, so Windows console fonts (Consolas, Cascadia) draw it narrow, focused or not;
+// ☰ comes from a fallback font there and breaks the row when the focus inverts it
+const MENU_SYMBOL = '≡'
 
 // Whether the menu row under the bar is shown; closes again after any choice
 let menuOpen = false
@@ -400,6 +402,7 @@ function draw($: EngineInterface, e: RenderInput): RenderElement {
   })
   if (!menuOpen) return row
 
+  // One item per line, right-aligned under the symbol: the band sits above the prompt, so the menu grows upward
   const items = menuItems($).map(item =>
     item.onPress
       ? Button({
@@ -419,13 +422,14 @@ function draw($: EngineInterface, e: RenderInput): RenderElement {
     flexDirection: 'column',
     width: '100%',
     children: [
-      row,
       Box({
         key: 'menu-items',
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'flex-end',
-        columnGap: 3,
+        flexDirection: 'column',
+        alignItems: 'flex-end',
+        borderStyle: 'round',
+        borderDimColor: true,
+        paddingX: 1,
+        alignSelf: 'flex-end',
         children: [
           ...items,
           Button({
@@ -440,6 +444,7 @@ function draw($: EngineInterface, e: RenderInput): RenderElement {
           }),
         ],
       }),
+      row,
     ],
   })
 }
