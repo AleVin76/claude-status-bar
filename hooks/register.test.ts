@@ -60,15 +60,15 @@ for (const surface of ['terminal', 'desktop'] as const) {
 
     const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text).join('')
     expect(texts).not.toContain('statusbar')
-    expect(texts).toContain('85.06%')
+    expect(texts).toContain('\u200785.06%')
     expect(texts).toContain('💲 1.23')
     expect(texts).not.toContain('$')
   })
 }
 
 for (const [locale, weekly] of [
-  ['it-IT', /📅 .* 60% \(\d{2}\/\d{2}, \d{2}:\d{2}\)/],
-  ['en-US', /📅 .* 60% \(\d{2}\/\d{2}, \d{2}:\d{2}\s?[AP]M\)/],
+  ['it-IT', /📅 .* \u200760% \(\d{2}\/\d{2}, \d{2}:\d{2}\)/],
+  ['en-US', /📅 .* \u200760% \(\d{2}\/\d{2}, \d{2}:\d{2}\s?[AP]M\)/],
 ] as const) {
   test(`weekly reset shows date and time in ${locale}`, { options: { locale } }, async ($, on) => {
     world(on)
@@ -93,8 +93,8 @@ test('Windows regional patterns drive the reset labels', async ($, on) => {
 
   const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
   const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text).join('')
-  expect(texts).toMatch(/🕒 .* 5% \(\d{2}:\d{2}\)/)
-  expect(texts).toMatch(/📅 .* 60% \(\d{2}\.\d{2} \d{2}:\d{2}\)/)
+  expect(texts).toMatch(/🕒 .* \u2007\u20075% \(\d{2}:\d{2}\)/)
+  expect(texts).toMatch(/📅 .* \u200760% \(\d{2}\.\d{2} \d{2}:\d{2}\)/)
 })
 
 test('automatic TTL is 1h on a subscription within its limits', async ($, on) => {
@@ -192,7 +192,25 @@ test('plan limits drop padding zeros, context keeps two decimals', async ($, on)
 
   const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
   const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text).join('')
-  expect(texts).toContain('85.06%')
-  expect(texts).toMatch(/🕒 [█░]{10} 23\.5% \(/)
-  expect(texts).toMatch(/📅 [█░]{10} 7% \(/)
+  expect(texts).toContain('\u200785.06%')
+  expect(texts).toMatch(/🕒 [█░]{10} \u200723\.5% \(/)
+  expect(texts).toMatch(/📅 [█░]{10} \u2007\u20077% \(/)
+})
+
+test('percentages keep a fixed width', async ($, on) => {
+  world(on)
+  await $.session.measure({
+    ...measure,
+    context: { window: 1_000_000, tokens: 60_600, percent: 6 },
+    rateLimits: [
+      { kind: 'five_hour', percentUsed: 99.5, resetsAt: '2026-10-14T09:00:00Z' },
+      { kind: 'seven_day', percentUsed: 0, resetsAt: '2026-10-20T09:00:00Z' },
+    ],
+  })
+
+  const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
+  const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text).join('')
+  expect(texts).toContain('🧠 █░░░░░░░░░ \u2007\u20076.06%')
+  expect(texts).toMatch(/🕒 [█░]{10}  99\.5% \(/)
+  expect(texts).toMatch(/📅 [█░]{10} \u2007\u20070% \(/)
 })

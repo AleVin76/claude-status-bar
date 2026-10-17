@@ -52,13 +52,24 @@ function pad(n: number): string {
   return String(n).padStart(2, '0')
 }
 
-// Plan limits arrive with at most one decimal: show them as received, no padding zeros (5%, 23.5%)
-function limitPct(value: number): string {
-  return `${Number(value.toFixed(1))}%`
+// Figure space: as wide as a digit in every font, and never collapsed like a plain space on the desktop surface
+const DIGIT_SPACE = '\u2007'
+const INTEGER_WIDTH = 3
+
+function padInteger(integer: string): string {
+  return integer.padStart(INTEGER_WIDTH, DIGIT_SPACE)
 }
 
+// Plan limits arrive with at most one decimal: integer part on 3 columns, decimals only when present ("  5%", " 23.5%")
+function limitPct(value: number): string {
+  const [integer = '0', decimals] = String(Number(value.toFixed(1))).split('.')
+  return `${padInteger(integer)}${decimals ? `.${decimals}` : ''}%`
+}
+
+// Integer part on 3 columns, always 2 decimals ("  6.06%", " 85.06%", "100.00%")
 function pct(value: number): string {
-  return `${value.toFixed(2)}%`
+  const [integer = '0', decimals = '00'] = value.toFixed(2).split('.')
+  return `${padInteger(integer)}.${decimals}%`
 }
 
 // m:ss, h:mm:ss, or "Ng h:mm:ss" past a day (weekly window)

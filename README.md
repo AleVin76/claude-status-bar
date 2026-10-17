@@ -3,7 +3,7 @@
 A [Claude Code mod](https://code.claude.com/docs/it/plugins/mods/overview) that adds a single colored status row directly above the prompt with everything you need to keep an eye on during a session:
 
 ```
-⏳ ███████░░░ 3:41 | 🧠 █░░░░░░░░░ 6.00% | 🕒 █░░░░░░░░░ 5% (11:00) | 📅 ░░░░░░░░░░ 1% (20/10 11:00) | 🤖 Opus 5.5 medium | 💲 1.23          ⇄ 1h [-]
+⏳ ███████░░░ 3:41 | 🧠 █░░░░░░░░░   6.00% | 🕒 █░░░░░░░░░   5% (11:00) | 📅 ░░░░░░░░░░   1% (20/10 11:00) | 🤖 Opus 5.5 medium | 💲 1.23          ⇄ 1h [-]
 ```
 
 | Segment | Meaning |

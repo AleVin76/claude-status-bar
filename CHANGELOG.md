@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.4 — 2026-10-17
+
+- Percentages have a fixed-width integer part (3 columns) and, for context usage, always 2 decimals, so the row no longer shifts as values change.
+
 ## 1.4.3 — 2026-10-17
 
 - 🕒 and 📅 percentages shown as received, without padding zeros (`5%`, `23.5%`).

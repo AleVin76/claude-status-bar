@@ -47,8 +47,10 @@ The mod's runtime does not inherit the system locale by itself, which is why it 
 
 | Segment | Decimals | Why |
 |---|---|---|
-| 🧠 Context | 2, exact | Computed from the token counts |
-| 🕒 / 📅 Plan limits | As received, without padding zeros (`5%`, `23.5%`) | Anthropic reports plan usage already rounded and Claude Code keeps at most one decimal. No more precise figure reaches Claude Code |
+| 🧠 Context | 2, exact | Computed from the token counts. Integer part on 3 columns: `  6.06%`, ` 85.06%`, `100.00%` |
+| 🕒 / 📅 Plan limits | As received, without padding zeros. Integer part on 3 columns: `  5%`, ` 23.5%`, `100%` | Anthropic reports plan usage already rounded and Claude Code keeps at most one decimal. No more precise figure reaches Claude Code |
+
+Padding uses a figure space (U+2007), as wide as a digit, so the columns stay aligned in the terminal and in the Desktop app.
 
 ## Reached limits
 
