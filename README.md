@@ -43,8 +43,10 @@ The installer:
 
 1. checks the Claude Code version;
 2. registers this repository as a plugin marketplace (or refreshes it);
-3. installs the `statusbar` mod (or updates it if already installed);
-4. edits `~/.claude/settings.json`, after saving a timestamped backup next to it: removes the old `statusLine`, sets `promptCacheTtl` when `-CacheTtl` is given, and drops the `cacheTtl` option used by versions before 1.3.0.
+3. installs the `statusbar` mod at user scope (or updates it if already installed);
+4. enables it, also when it had been disabled before (an update alone keeps a disabled plugin disabled);
+5. edits `~/.claude/settings.json`, after saving a timestamped backup next to it: removes the old `statusLine`, sets `promptCacheTtl` when `-CacheTtl` is given, sets the `locale` option to `system` when unset, and drops the `cacheTtl` option used by versions before 1.3.0;
+6. checks with `claude plugin list` that the mod is installed **and enabled**, and stops with an error otherwise. It also warns when `disableAllHooks` is `true`, since that setting keeps every mod from loading.
 
 Restart Claude Code, or run `/reload-plugins` in an open session.
 

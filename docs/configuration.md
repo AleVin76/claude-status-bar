@@ -4,7 +4,7 @@
 
 | Option | Values | Default | Description |
 |---|---|---|---|
-| `locale` | BCP 47 tag (`it-IT`, `en-GB`, …) or empty | empty | Locale for reset dates and times. Empty uses the operating system's regional settings (see [How it works → Date and time format](how-it-works.md#date-and-time-format)). |
+| `locale` | `system` or a BCP 47 tag (`it-IT`, `en-GB`, …) | `system` | Locale for reset dates and times. `system` (or empty) uses the operating system's regional settings (see [How it works → Date and time format](how-it-works.md#date-and-time-format)). |
 
 ## Changing an option
 
@@ -22,7 +22,7 @@ claude plugin install statusbar@claude-status-bar --config locale=it-IT
 {
   "pluginConfigs": {
     "statusbar@claude-status-bar": {
-      "options": { "locale": "" }
+      "options": { "locale": "system" }
     }
   }
 }

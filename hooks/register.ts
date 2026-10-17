@@ -308,7 +308,9 @@ async function tick($: EngineInterface): Promise<void> {
 }
 
 export const register: Register = (on, options) => {
-  const locale = typeof options.locale === 'string' ? options.locale.trim() : ''
+  // "system" (the default) or empty: the operating system's regional settings
+  const configured = typeof options.locale === 'string' ? options.locale.trim() : ''
+  const locale = configured.toLowerCase() === 'system' ? '' : configured
   if (locale !== '') state.dates = intlFormatter(locale)
 
   on('session.start', async ($, e, next) => {

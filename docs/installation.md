@@ -9,7 +9,8 @@ What they change:
 | File / command | Change |
 |---|---|
 | `claude plugin marketplace add AleVin76/claude-status-bar` | Adds `claude-status-bar` under `extraKnownMarketplaces` in `~/.claude/settings.json` |
-| `claude plugin install statusbar@claude-status-bar` | Enables the plugin (`enabledPlugins`) |
+| `claude plugin install statusbar@claude-status-bar --scope user --config locale=system` | Installs the plugin for every project and stores its option (`pluginConfigs`) |
+| `claude plugin enable statusbar@claude-status-bar --scope user` | Sets `enabledPlugins."statusbar@claude-status-bar": true`, also after an update of a disabled plugin |
 | `~/.claude/settings.json` | Removes `statusLine` (unless `-KeepStatusLine` / `--keep-statusline`); sets `promptCacheTtl` with `-CacheTtl` / `--cache-ttl`; drops the pre-1.3.0 `cacheTtl` option |
 | `~/.claude/settings.json.<yyyyMMdd-HHmmss>.bak` | Backup written before any of the changes above |
 
@@ -64,5 +65,22 @@ claude plugin install statusbar@claude-status-bar
 A folder loaded this way is read as `statusbar@inline`; see [configuration](configuration.md) for how its options are stored.
 
 ## Verify
+
+The installer ends with `statusbar@claude-status-bar <version> installed and enabled`. To check by hand:
+
+```bash
+claude plugin list
+```
+
+The `statusbar@claude-status-bar` entry must show it enabled. If it does not, run `claude plugin enable statusbar@claude-status-bar`.
+
+Things that keep an enabled plugin from loading:
+
+| Cause | Fix |
+|---|---|
+| `"disableAllHooks": true` in `settings.json` (the installer warns) | Set it to `false`; it also re-enables your other hooks |
+| `"enabledPlugins": { "statusbar@claude-status-bar": false }` in a project's `.claude/settings.json` | Remove that entry from the project |
+| Organization policy (`allowManagedModsOnly`, `allowManagedHooksOnly`) | Ask your administrator |
+| Session started with `--safe-mode` or `--bare` | Start it without the flag |
 
 In Claude Code run `/plugin`: the line under the tabs shows `1 mod active · statusbar` (or the list of active mods). If the bar does not appear, see [How it works → Troubleshooting](how-it-works.md#troubleshooting).

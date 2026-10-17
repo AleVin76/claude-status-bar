@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.2 — 2026-10-17
+
+- Installers always leave the plugin enabled: they run `claude plugin enable` after installing or updating (an update alone kept a disabled plugin disabled), then check `claude plugin list` and stop with an error if it is not enabled.
+- Installers warn when `disableAllHooks` is `true`, which keeps every mod from loading.
+- The `locale` option defaults to `system`; installers set it when unset, so Claude Code no longer reports an unconfigured option.
+
 ## 1.3.1 — 2026-10-14
 
 - The ⇄ cache TTL switch is aligned to the right edge of the row.

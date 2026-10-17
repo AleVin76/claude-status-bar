@@ -70,9 +70,15 @@ if ($installed | Where-Object { $_.id -eq $PluginId }) {
     $r = Invoke-Claude plugin update $PluginId
 } else {
     Write-Step "Installing $PluginId"
-    $r = Invoke-Claude plugin install $PluginId
+    $r = Invoke-Claude plugin install $PluginId --scope user --config 'locale=system'
 }
 if ($r.ExitCode -ne 0) { throw "Plugin step failed:`n$($r.Output)" }
+
+# An update keeps a plugin that was disabled disabled: enable it explicitly
+$r = Invoke-Claude plugin enable $PluginId --scope user --json
+$enable = ($r.Output -split "`r?`n" | Where-Object { $_ -match '^\{' } | Select-Object -First 1) | ConvertFrom-Json
+if ($r.ExitCode -ne 0 -and -not $enable.alreadyInGoalState) { throw "Enable step failed:`n$($r.Output)" }
+if (-not $enable.alreadyInGoalState) { Write-Step "Enabled $PluginId" }
 
 # 4. settings.json: old status line, prompt cache TTL, option dropped in 1.3.0
 $settingsPath = Join-Path $env:USERPROFILE '.claude\settings.json'
@@ -98,6 +104,11 @@ if ($options -and $options.PSObject.Properties.Name -contains 'cacheTtl') {
     $options.PSObject.Properties.Remove('cacheTtl')
     $changes += "removed obsolete statusbar option 'cacheTtl'"
 }
+# Before 1.3.2 an empty locale meant "system"; an unset option makes Claude Code ask to configure the plugin
+if ($options -and (-not $options.locale -or "$($options.locale)".Trim() -eq '')) {
+    $options | Add-Member -NotePropertyName locale -NotePropertyValue 'system' -Force
+    $changes += "statusbar option 'locale' = system"
+}
 
 if ($changes.Count -gt 0) {
     if (Test-Path $settingsPath) {
@@ -110,6 +121,18 @@ if ($changes.Count -gt 0) {
     $json = $settings | ConvertTo-Json -Depth 64
     [IO.File]::WriteAllText($settingsPath, $json, (New-Object Text.UTF8Encoding $false))
     Write-Step "settings.json: $($changes -join ', ')"
+}
+
+# 5. Verify: installed, enabled, and not switched off by disableAllHooks
+$entry = ((Invoke-Claude plugin list --json).Output | ConvertFrom-Json) | Where-Object { $_.id -eq $PluginId }
+if (-not $entry) { throw "$PluginId is not listed by 'claude plugin list' after installation." }
+if (-not $entry.enabled) { throw "$PluginId is installed but still disabled. Run: claude plugin enable $PluginId" }
+Write-Step "$PluginId $($entry.version) installed and enabled"
+
+$merged = if (Test-Path $settingsPath) { Get-Content $settingsPath -Raw | ConvertFrom-Json } else { $null }
+if ($merged -and $merged.disableAllHooks -eq $true) {
+    Write-Warning ("'disableAllHooks' is true in $settingsPath`: Claude Code loads no mod, so the status bar stays hidden. " +
+        "Set it to false (it also re-enables your other hooks) to see the bar.")
 }
 
 Write-Host ''

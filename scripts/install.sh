@@ -49,8 +49,14 @@ if claude plugin list --json | grep -q "\"id\": *\"${PLUGIN_ID}\""; then
   claude plugin update "$PLUGIN_ID"
 else
   step "Installing ${PLUGIN_ID}"
-  claude plugin install "$PLUGIN_ID"
+  claude plugin install "$PLUGIN_ID" --scope user --config "locale=system"
 fi
+
+# An update keeps a plugin that was disabled disabled: enable it explicitly
+enable_out="$(claude plugin enable "$PLUGIN_ID" --scope user --json 2>&1)" || {
+  grep -q '"alreadyInGoalState":true' <<<"$enable_out" || { echo "Enable step failed:" >&2; echo "$enable_out" >&2; exit 1; }
+}
+grep -q '"alreadyInGoalState":true' <<<"$enable_out" || step "Enabled ${PLUGIN_ID}"
 
 settings="${HOME}/.claude/settings.json"
 # Python is used for JSON editing because it ships with macOS and most Linux distributions
@@ -74,6 +80,11 @@ options = data.get("pluginConfigs", {}).get(plugin_id, {}).get("options", {})
 if "cacheTtl" in options:
     del options["cacheTtl"]
     changes.append("removed obsolete statusbar option 'cacheTtl'")
+# Before 1.3.2 an empty locale meant "system"; an unset option makes Claude Code ask to configure the plugin
+plugin_options = data.setdefault("pluginConfigs", {}).setdefault(plugin_id, {}).setdefault("options", {})
+if not str(plugin_options.get("locale", "")).strip():
+    plugin_options["locale"] = "system"
+    changes.append("statusbar option 'locale' = system")
 if changes:
     if os.path.exists(path):
         shutil.copy2(path, backup)
@@ -88,6 +99,21 @@ PY
   [[ -n "$summary" ]] && step "settings.json: ${summary}"
 else
   echo "python3 not found: edit ${settings} by hand (remove \"statusLine\", set \"promptCacheTtl\")." >&2
+fi
+
+# Verify: installed, enabled, and not switched off by disableAllHooks
+entry="$(claude plugin list --json | python3 -c '
+import json, sys
+for p in json.load(sys.stdin):
+    if p["id"] == sys.argv[1]:
+        print(p["version"], "enabled" if p.get("enabled") else "disabled")
+' "$PLUGIN_ID")"
+[[ -n "$entry" ]] || { echo "${PLUGIN_ID} is not listed by 'claude plugin list' after installation." >&2; exit 1; }
+[[ "$entry" == *" enabled" ]] || { echo "${PLUGIN_ID} is installed but still disabled. Run: claude plugin enable ${PLUGIN_ID}" >&2; exit 1; }
+step "${PLUGIN_ID} ${entry% enabled} installed and enabled"
+
+if [[ -f "$settings" ]] && python3 -c 'import json,sys; sys.exit(0 if json.load(open(sys.argv[1])).get("disableAllHooks") is True else 1)' "$settings" 2>/dev/null; then
+  printf '\033[33mWarning: "disableAllHooks" is true in %s: Claude Code loads no mod, so the status bar stays hidden.\nSet it to false (it also re-enables your other hooks) to see the bar.\033[0m\n' "$settings" >&2
 fi
 
 printf '\n\033[32mClaude Status Bar installed. Restart Claude Code (or run /reload-plugins).\033[0m\n'
