@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.0 — 2026-10-17
+
+- 🕒 and 📅: once a limit is reached, the percentage and reset date are replaced by a live countdown to the reset (`reset tra 2:15:30`, `reset tra 2g 3:04:05`).
+
 ## 1.3.2 — 2026-10-17
 
 - Installers always leave the plugin enabled: they run `claude plugin enable` after installing or updating (an update alone kept a disabled plugin disabled), then check `claude plugin list` and stop with an error if it is not enabled.

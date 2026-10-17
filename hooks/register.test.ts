@@ -13,11 +13,11 @@ const measure: SessionMeasureInput = {
 
 const SETTINGS_PATH = '/home/u/.claude/settings.json'
 
-type World = { env?: Record<string, string>; files?: Record<string, string> }
+type World = { env?: Record<string, string>; files?: Record<string, string>; now?: number }
 
 // Answers the nouns the mod reads beneath it: clock, env, settings and an in-memory file system
-function world(on: On, { env = {}, files = {} }: World = {}): Record<string, string> {
-  mock.clock(on)
+function world(on: On, { env = {}, files = {}, now }: World = {}): Record<string, string> {
+  mock.clock(on, now === undefined ? undefined : { now })
   mock.env(on, { HOME: '/home/u', ...env })
   on('settings.read', async () => {
     try {
@@ -154,3 +154,27 @@ for (const [variable, value, shown] of [
     expect(await ui.find({ type: 'Text', text: shown })).toBeDefined()
   })
 }
+
+test('a reached limit shows the time left to its reset', async ($, on) => {
+  const now = Date.parse('2026-10-17T08:00:00Z')
+  world(on, { now })
+  on('session.start', async (_$, e) => e)
+  on('session.usage', async () => ({ value: { startedAt: 0, context: { window: 200_000 }, rateLimits: [] } }))
+  on('session.model', async () => ({ value: 'Opus 5.5' }))
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await $.session.measure({
+    ...measure,
+    rateLimits: [
+      // 2h 15m 30s left
+      { kind: 'five_hour', percentUsed: 100, resetsAt: new Date(now + 8_130_000).toISOString() },
+      // 2 days 3h 4m 5s left
+      { kind: 'seven_day', percentUsed: 100.4, resetsAt: new Date(now + 2 * 86_400_000 + 11_045_000).toISOString() },
+    ],
+  })
+
+  const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
+  const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text).join('')
+  expect(texts).toContain('🕒 ██████████ reset tra 2:15:30')
+  expect(texts).toContain('📅 ██████████ reset tra 2g 3:04:05')
+  expect(texts).not.toMatch(/100(\.\d+)?%/)
+})

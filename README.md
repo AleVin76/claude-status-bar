@@ -10,8 +10,8 @@ A [Claude Code mod](https://code.claude.com/docs/it/plugins/mods/overview) that 
 |---|---|
 | ⏳ | Time left before the prompt cache expires (`--:--` before the first request, `scaduta` once expired) |
 | 🧠 | Context window usage |
-| 🕒 | 5-hour plan limit, with reset time |
-| 📅 | Weekly plan limit, with reset date and time |
+| 🕒 | 5-hour plan limit, with reset time. Once the limit is reached: time left to the reset (`reset tra 2:15:30`) |
+| 📅 | Weekly plan limit, with reset date and time. Once the limit is reached: time left to the reset (`reset tra 2g 3:04:05`) |
 | 🤖 | Model and reasoning effort |
 | 💲 | What the session would have cost at API prices, in US dollars |
 | ⇄ 1h | Right-aligned at the end of the row. Prompt cache TTL in use: click (or Tab + Enter) to switch between `5m` and `1h`. Shows 🔒 when an environment variable fixes it |

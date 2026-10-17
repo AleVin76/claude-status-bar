@@ -56,11 +56,14 @@ function pct(value: number): string {
   return `${value.toFixed(2)}%`
 }
 
+// m:ss, h:mm:ss, or "Ng h:mm:ss" past a day (weekly window)
 function countdown(ms: number): string {
-  const total = Math.ceil(ms / 1000)
-  const h = Math.floor(total / 3600)
+  const total = Math.max(0, Math.ceil(ms / 1000))
+  const d = Math.floor(total / 86_400)
+  const h = Math.floor((total % 86_400) / 3600)
   const m = Math.floor((total % 3600) / 60)
   const s = total % 60
+  if (d > 0) return `${d}g ${h}:${pad(m)}:${pad(s)}`
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`
 }
 
@@ -147,7 +150,13 @@ function resetLabel(limit: SessionRateLimit): string {
 }
 
 function limitSegment(icon: string, limit: SessionRateLimit | undefined): Segment | undefined {
-  return limit && { icon, percent: limit.percentUsed, text: `${pct(limit.percentUsed)}${resetLabel(limit)}` }
+  if (!limit) return undefined
+  // Limit reached: the only useful figure is how long until the window resets
+  if (limit.percentUsed >= 100 && limit.resetsAt) {
+    const left = Date.parse(limit.resetsAt) - state.now
+    return { icon, percent: 100, text: left > 0 ? `reset tra ${countdown(left)}` : 'reset in corso' }
+  }
+  return { icon, percent: limit.percentUsed, text: `${pct(limit.percentUsed)}${resetLabel(limit)}` }
 }
 
 function cacheSegment(): Segment {

@@ -43,6 +43,16 @@ Examples for the weekly reset: `20/10 11:00` (it-IT, `dd/MM/yyyy` + `HH:mm`), `1
 
 The mod's runtime does not inherit the system locale by itself, which is why it is read explicitly.
 
+## Reached limits
+
+When a plan window reaches 100%, its segment drops the percentage and the reset date and shows a live countdown to the reset instead, with a full red bar:
+
+```
+🕒 ██████████ reset tra 2:15:30 | 📅 ██████████ reset tra 2g 3:04:05
+```
+
+The format is `m:ss`, `h:mm:ss`, or `Ng h:mm:ss` beyond a day. When the reset time has passed but Claude Code has not reported new figures yet, the segment reads `reset in corso` until the next response.
+
 ## Prompt cache countdown
 
 Anthropic's prompt cache keeps a prefix for a fixed time (5 minutes by default, 1 hour when extended) and every request that reads it restarts the timer. The mod therefore:
