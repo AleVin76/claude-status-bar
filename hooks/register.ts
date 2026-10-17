@@ -235,6 +235,17 @@ function asTtl(value: unknown): Ttl | undefined {
 // Mirrors Claude Code's own order: FORCE_PROMPT_CACHING_5M, CLAUDE_CODE_PROMPT_CACHE_TTL,
 // the promptCacheTtl setting, ENABLE_PROMPT_CACHING_1H, then automatic
 // (1 hour on a subscription within its limits, 5 minutes otherwise)
+const EFFORT_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max']
+
+// Effort configured for the session, known before any request: CLAUDE_CODE_EFFORT_LEVEL, then the
+// effortLevel setting that /effort and /model persist. A request's own effort replaces it.
+async function configuredEffort($: EngineInterface): Promise<string | undefined> {
+  const fromEnv = (await $.env.get('CLAUDE_CODE_EFFORT_LEVEL'))?.trim().toLowerCase()
+  if (fromEnv && EFFORT_LEVELS.includes(fromEnv)) return fromEnv
+  const fromSetting = (await $.settings.read()).effortLevel
+  return typeof fromSetting === 'string' && EFFORT_LEVELS.includes(fromSetting) ? fromSetting : undefined
+}
+
 async function resolveTtl($: EngineInterface): Promise<void> {
   if (isTruthy(await $.env.get('FORCE_PROMPT_CACHING_5M'))) {
     state.ttl = '5m'
@@ -369,6 +380,7 @@ export const register: Register = (on, options) => {
     if (locale === '') state.dates = await systemFormatter($)
     state.usage = await $.session.usage()
     state.model = await $.session.model()
+    state.effort ??= await configuredEffort($)
     await resolveTtl($)
     await tick($)
     // 1 s tick drives the cache countdown; the other figures arrive via session.measure
@@ -385,14 +397,20 @@ export const register: Register = (on, options) => {
   })
 
   on('turn.step', async function* ($, e, next) {
-    if (e.agentId === undefined) await resolveTtl($)
+    if (e.agentId === undefined) {
+      await resolveTtl($)
+      // The request's effort is known before it is sent: show it now, not when the answer ends
+      if (e.effort !== undefined) {
+        state.effort = String(e.effort)
+        $.ui.invalidate('ui.render')
+      }
+    }
     const ttlForRequest = state.ttl
     const result = yield* next(e)
     if (e.agentId === undefined) {
       state.lastResponseAt = await $.clock.now()
       state.requestTtl = ttlForRequest
       state.model = await $.session.model()
-      if (e.effort !== undefined) state.effort = String(e.effort)
       await tick($)
     }
     return result
@@ -401,6 +419,9 @@ export const register: Register = (on, options) => {
   // settings.json edited by hand or by another session
   on('classic.ConfigChange', async ($, e, next) => {
     await resolveTtl($)
+    // /effort and /model persist the level in settings.json
+    const effort = await configuredEffort($)
+    if (effort) state.effort = effort
     $.ui.invalidate('ui.render')
     return next(e)
   }).catch(($, e, next) => next(e))

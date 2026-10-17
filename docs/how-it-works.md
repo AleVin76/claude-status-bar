@@ -22,7 +22,7 @@ The thresholds are `WARNING_FROM` and `ERROR_FROM` at the top of `hooks/register
 | 🕒 5-hour limit | `rateLimits` entry `five_hour` (`percentUsed`, `resetsAt`) | `session.measure` |
 | 📅 Weekly limit | `rateLimits` entry `seven_day` | `session.measure` |
 | 🤖 Model | `$.session.model()` | Session start and each request |
-| 🤖 Effort | `effort` of the last request (`turn.step`) | Each request |
+| 🤖 Effort | `effort` of the current request (`turn.step`); before the first request, `CLAUDE_CODE_EFFORT_LEVEL` or the `effortLevel` setting | Session start, start of each request, each `settings.json` change |
 | 💲 Cost | `cost.usd`, the same total as `/cost`, in US dollars | `session.measure` |
 
 `session.measure` is raised by Claude Code after every turn and whenever a plan limit moves, so those segments carry the same figures as the native status line.
@@ -106,7 +106,7 @@ Before the first response of a session no plan limit is known yet, so an automat
 ## Limits
 
 - 🕒 and 📅 appear only on a subscription plan: with an API key there are no plan windows to show.
-- Effort is known only after the first request of the session.
+- Before the first request, effort comes from `CLAUDE_CODE_EFFORT_LEVEL` or `effortLevel`; with neither set, it appears when the first request starts.
 - Reset times are shown in the computer's local time zone.
 
 ## Where it runs

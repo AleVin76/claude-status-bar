@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.2 — 2026-10-17
+
+- 🤖 effort shown from session start (`CLAUDE_CODE_EFFORT_LEVEL` or the `effortLevel` setting) and updated when a request starts, instead of only after the first answer; `/effort` changes show at once.
+
 ## 1.5.1 — 2026-10-17
 
 - 🤖 effort shown as its first two letters (`lo`, `me`, `hi`, `xh`, `ma`), keeping its color.

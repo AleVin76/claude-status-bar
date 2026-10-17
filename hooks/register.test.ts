@@ -245,3 +245,19 @@ for (const [effort, color, bold] of [
     expect(word?.props.bold).toBe(bold)
   })
 }
+
+for (const [source, world_, expected] of [
+  ['the effortLevel setting', { files: { [SETTINGS_PATH]: JSON.stringify({ effortLevel: 'high' }) } }, 'hi'],
+  ['CLAUDE_CODE_EFFORT_LEVEL', { env: { CLAUDE_CODE_EFFORT_LEVEL: 'max' }, files: { [SETTINGS_PATH]: JSON.stringify({ effortLevel: 'low' }) } }, 'ma'],
+] as const) {
+  test(`effort from ${source} shows before the first request`, async ($, on) => {
+    world(on, world_)
+    on('session.start', async (_$, e) => e)
+    on('session.usage', async () => ({ value: { startedAt: 0, context: { window: 200_000 }, rateLimits: [] } }))
+    on('session.model', async () => ({ value: 'Opus 5.5' }))
+    await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+
+    const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
+    expect((await ui.findAll({ type: 'Text', text: expected })).some(t => t.text === expected)).toBe(true)
+  })
+}
