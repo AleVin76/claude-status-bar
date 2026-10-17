@@ -48,7 +48,7 @@ The mod's runtime does not inherit the system locale by itself, which is why it 
 | Segment | Decimals | Why |
 |---|---|---|
 | 🧠 Context | 2, exact | Computed from the token counts |
-| 🕒 / 📅 Plan limits | As received | Anthropic reports plan usage already rounded and Claude Code keeps at most one decimal, so these usually end in `.00`. No more precise figure reaches Claude Code |
+| 🕒 / 📅 Plan limits | As received, without padding zeros (`5%`, `23.5%`) | Anthropic reports plan usage already rounded and Claude Code keeps at most one decimal. No more precise figure reaches Claude Code |
 
 ## Reached limits
 

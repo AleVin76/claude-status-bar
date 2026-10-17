@@ -67,8 +67,8 @@ for (const surface of ['terminal', 'desktop'] as const) {
 }
 
 for (const [locale, weekly] of [
-  ['it-IT', /📅 .* 60\.00% \(\d{2}\/\d{2}, \d{2}:\d{2}\)/],
-  ['en-US', /📅 .* 60\.00% \(\d{2}\/\d{2}, \d{2}:\d{2}\s?[AP]M\)/],
+  ['it-IT', /📅 .* 60% \(\d{2}\/\d{2}, \d{2}:\d{2}\)/],
+  ['en-US', /📅 .* 60% \(\d{2}\/\d{2}, \d{2}:\d{2}\s?[AP]M\)/],
 ] as const) {
   test(`weekly reset shows date and time in ${locale}`, { options: { locale } }, async ($, on) => {
     world(on)
@@ -93,8 +93,8 @@ test('Windows regional patterns drive the reset labels', async ($, on) => {
 
   const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
   const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text).join('')
-  expect(texts).toMatch(/🕒 .* 5\.00% \(\d{2}:\d{2}\)/)
-  expect(texts).toMatch(/📅 .* 60\.00% \(\d{2}\.\d{2} \d{2}:\d{2}\)/)
+  expect(texts).toMatch(/🕒 .* 5% \(\d{2}:\d{2}\)/)
+  expect(texts).toMatch(/📅 .* 60% \(\d{2}\.\d{2} \d{2}:\d{2}\)/)
 })
 
 test('automatic TTL is 1h on a subscription within its limits', async ($, on) => {
@@ -178,4 +178,21 @@ test('a reached limit shows the time left to its reset', async ($, on) => {
   expect(texts).toContain('📅 ██████████ 2g 3:04:05')
   expect(texts).not.toContain('reset tra')
   expect(texts).not.toMatch(/100(\.\d+)?%/)
+})
+
+test('plan limits drop padding zeros, context keeps two decimals', async ($, on) => {
+  world(on)
+  await $.session.measure({
+    ...measure,
+    rateLimits: [
+      { kind: 'five_hour', percentUsed: 23.5, resetsAt: '2026-10-14T09:00:00Z' },
+      { kind: 'seven_day', percentUsed: 7, resetsAt: '2026-10-20T09:00:00Z' },
+    ],
+  })
+
+  const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
+  const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text).join('')
+  expect(texts).toContain('85.06%')
+  expect(texts).toMatch(/🕒 [█░]{10} 23\.5% \(/)
+  expect(texts).toMatch(/📅 [█░]{10} 7% \(/)
 })

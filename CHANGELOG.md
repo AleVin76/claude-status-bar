@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.3 — 2026-10-17
+
+- 🕒 and 📅 percentages shown as received, without padding zeros (`5%`, `23.5%`).
+
 ## 1.4.2 — 2026-10-17
 
 - 🧠 context usage computed from the token counts, so its two decimals are exact (Claude Code's own figure is a whole number).

@@ -52,6 +52,11 @@ function pad(n: number): string {
   return String(n).padStart(2, '0')
 }
 
+// Plan limits arrive with at most one decimal: show them as received, no padding zeros (5%, 23.5%)
+function limitPct(value: number): string {
+  return `${Number(value.toFixed(1))}%`
+}
+
 function pct(value: number): string {
   return `${value.toFixed(2)}%`
 }
@@ -162,7 +167,7 @@ function limitSegment(icon: string, limit: SessionRateLimit | undefined): Segmen
     const left = Date.parse(limit.resetsAt) - state.now
     return { icon, percent: 100, text: left > 0 ? countdown(left) : 'reset in corso' }
   }
-  return { icon, percent: limit.percentUsed, text: `${pct(limit.percentUsed)}${resetLabel(limit)}` }
+  return { icon, percent: limit.percentUsed, text: `${limitPct(limit.percentUsed)}${resetLabel(limit)}` }
 }
 
 function cacheSegment(): Segment {
