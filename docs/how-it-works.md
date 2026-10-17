@@ -48,7 +48,7 @@ The mod's runtime does not inherit the system locale by itself, which is why it 
 When a plan window reaches 100%, its segment drops the percentage and the reset date and shows a live countdown to the reset instead, with a full red bar:
 
 ```
-🕒 ██████████ reset tra 2:15:30 | 📅 ██████████ reset tra 2g 3:04:05
+🕒 ██████████ 2:15:30 | 📅 ██████████ 2g 3:04:05
 ```
 
 The format is `m:ss`, `h:mm:ss`, or `Ng h:mm:ss` beyond a day. When the reset time has passed but Claude Code has not reported new figures yet, the segment reads `reset in corso` until the next response.

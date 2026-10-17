@@ -174,7 +174,8 @@ test('a reached limit shows the time left to its reset', async ($, on) => {
 
   const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
   const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text).join('')
-  expect(texts).toContain('🕒 ██████████ reset tra 2:15:30')
-  expect(texts).toContain('📅 ██████████ reset tra 2g 3:04:05')
+  expect(texts).toContain('🕒 ██████████ 2:15:30')
+  expect(texts).toContain('📅 ██████████ 2g 3:04:05')
+  expect(texts).not.toContain('reset tra')
   expect(texts).not.toMatch(/100(\.\d+)?%/)
 })

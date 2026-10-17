@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.1 — 2026-10-17
+
+- Reached limits show the bare countdown, without the `reset tra` label.
+
 ## 1.4.0 — 2026-10-17
 
 - 🕒 and 📅: once a limit is reached, the percentage and reset date are replaced by a live countdown to the reset (`reset tra 2:15:30`, `reset tra 2g 3:04:05`).

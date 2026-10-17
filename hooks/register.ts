@@ -154,7 +154,7 @@ function limitSegment(icon: string, limit: SessionRateLimit | undefined): Segmen
   // Limit reached: the only useful figure is how long until the window resets
   if (limit.percentUsed >= 100 && limit.resetsAt) {
     const left = Date.parse(limit.resetsAt) - state.now
-    return { icon, percent: 100, text: left > 0 ? `reset tra ${countdown(left)}` : 'reset in corso' }
+    return { icon, percent: 100, text: left > 0 ? countdown(left) : 'reset in corso' }
   }
   return { icon, percent: limit.percentUsed, text: `${pct(limit.percentUsed)}${resetLabel(limit)}` }
 }
