@@ -22,6 +22,19 @@ Menu actions:
 |---|---|
 | `⇄ Cache 1h → 5m` | Switches Claude Code's prompt cache TTL between `5m` and `1h`. Shown as `🔒 Cache 5m (…)` when an environment variable fixes it |
 
+| `🔔 Suono completamento: on` | Turns the completion sound on or off |
+| `🔔 Suono domanda: on` | Turns the question sound on or off |
+| `▶ Prova suoni` | Plays both sounds, to check them |
+
+## Sounds
+
+| Sound | Plays when | Default file |
+|---|---|---|
+| Completion | Claude finishes an answer that took at least 15 seconds (not for interrupted turns or subagents) | `sounds/complete.wav`, a rising three-note chime |
+| Question | Claude asks you something: a multiple-choice question, a permission request, an MCP input request. One sound per burst | `sounds/question.wav`, two rising notes |
+
+Each sound can be turned on or off on its own, and each can use your own WAV file: see [Configuration → Sounds](docs/configuration.md#sounds). Sounds play on the computer running Claude Code (terminal, or local sessions of the Desktop app); cloud sessions are silent.
+
 Bars turn **green** below 50%, **yellow** from 50% and **red** from 80%. The ⏳ bar drains as the cache ages and changes color on the elapsed share. Colors follow your Claude Code theme (`success`, `warning`, `error`). Reset dates and times follow the operating system's regional settings.
 
 ## Requirements

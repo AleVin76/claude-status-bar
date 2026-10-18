@@ -9,7 +9,10 @@
 hooks/
   hooks.json         Points Claude Code at the hooks module
   register.ts        The mod
+  sounds.ts          Sound playback and settings
   register.test.ts   Tests run by `claude plugin test`
+sounds/
+  complete.wav / question.wav    Bundled sounds
 scripts/
   install.ps1 / install.sh       Automatic installers
   uninstall.ps1 / uninstall.sh   Uninstallers

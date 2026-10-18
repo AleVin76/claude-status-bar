@@ -30,6 +30,21 @@ $ErrorActionPreference = 'Stop'
 $Repo        = $(if ($env:CSB_SOURCE) { $env:CSB_SOURCE } else { 'AleVin76/claude-status-bar' })
 $Marketplace = 'claude-status-bar'
 $PluginId    = "statusbar@$Marketplace"
+
+# Every plugin option gets a stored value: an unset one makes Claude Code ask to configure the plugin
+$OptionDefaults = [ordered]@{
+    locale             = 'system'
+    soundOnComplete    = $true
+    soundOnQuestion    = $true
+    completeSound      = 'default'
+    questionSound      = 'default'
+    completeMinSeconds = 15
+}
+
+function Format-Option($value) {
+    if ($value -is [bool]) { return $value.ToString().ToLower() }
+    return "$value"
+}
 $MinVersion  = [version]'2.1.287'
 
 function Write-Step([string]$Message) { Write-Host "==> $Message" -ForegroundColor Cyan }
@@ -70,7 +85,8 @@ if ($installed | Where-Object { $_.id -eq $PluginId }) {
     $r = Invoke-Claude plugin update $PluginId
 } else {
     Write-Step "Installing $PluginId"
-    $r = Invoke-Claude plugin install $PluginId --scope user --config 'locale=system'
+    $configArgs = foreach ($name in $OptionDefaults.Keys) { '--config'; "$name=$(Format-Option $OptionDefaults[$name])" }
+    $r = Invoke-Claude plugin install $PluginId --scope user @configArgs
 }
 if ($r.ExitCode -ne 0) { throw "Plugin step failed:`n$($r.Output)" }
 
@@ -104,10 +120,15 @@ if ($options -and $options.PSObject.Properties.Name -contains 'cacheTtl') {
     $options.PSObject.Properties.Remove('cacheTtl')
     $changes += "removed obsolete statusbar option 'cacheTtl'"
 }
-# Before 1.3.2 an empty locale meant "system"; an unset option makes Claude Code ask to configure the plugin
-if ($options -and (-not $options.locale -or "$($options.locale)".Trim() -eq '')) {
-    $options | Add-Member -NotePropertyName locale -NotePropertyValue 'system' -Force
-    $changes += "statusbar option 'locale' = system"
+# Options added by later versions, and an empty locale (before 1.3.2 it meant "system"), get their default
+if ($options) {
+    foreach ($name in $OptionDefaults.Keys) {
+        $current = $options.PSObject.Properties[$name]
+        if (-not $current -or ($current.Value -is [string] -and $current.Value.Trim() -eq '')) {
+            $options | Add-Member -NotePropertyName $name -NotePropertyValue $OptionDefaults[$name] -Force
+            $changes += "statusbar option '$name' = $(Format-Option $OptionDefaults[$name])"
+        }
+    }
 }
 
 if ($changes.Count -gt 0) {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.0 — 2026-10-18
+
+- Sounds: one when Claude finishes an answer of at least 15 seconds, another when it asks something (multiple-choice questions, permission requests, MCP input requests).
+- Each sound can be turned on or off on its own (from the [≡] menu or `/config`) and can use a WAV file of your own; `▶ Prova suoni` plays both.
+- New options: `soundOnComplete`, `soundOnQuestion`, `completeSound`, `questionSound`, `completeMinSeconds`. Installers store every option, so Claude Code never asks to configure the plugin.
+
 ## 1.6.2 — 2026-10-17
 
 - Menu button drawn as `[≡]`; brackets and menu frame in the theme's `suggestion` color (`MENU_COLOR` in `hooks/register.ts`).

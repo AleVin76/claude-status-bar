@@ -313,3 +313,121 @@ for (const surface of ['terminal', 'desktop'] as const) test(`the menu opens upw
   expect(keys.indexOf('menu-items')).toBeLessThan(keys.indexOf('statusbar-row'))
   expect((await ui.find({ type: 'Box', key: 'menu-items' }))?.props).toMatchObject({ flexDirection: 'column', alignSelf: 'flex-end', borderColor: 'suggestion' })
 })
+
+type Played = { argv: readonly string[]; env?: Record<string, string> }
+
+// Records the player commands instead of running them
+function recordPlayer(on: On): Played[] {
+  const played: Played[] = []
+  on('process.run', async (_$, e) => {
+    played.push({ argv: e.argv, env: e.init?.env })
+    return { value: { exitCode: 0, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  return played
+}
+
+const soundFile = (p: Played): string | undefined => p.env?.CSB_SOUND ?? p.argv.at(-1)
+
+async function flush(_$: Engine): Promise<void> {
+  // Sounds play in the background: let their calls settle
+  // The test environment has timers even though the hooks' typings name none
+  await new Promise(resolve => (globalThis as unknown as { setTimeout: (f: () => void, ms: number) => void }).setTimeout(() => resolve(undefined), 50))
+}
+
+function quietToasts(on: On): void {
+  on('ui.toast', async () => ({ value: undefined }))
+}
+
+const completed = (durationMs: number, reason: 'answer' | 'aborted' = 'answer', agentId?: string) =>
+  ({ answer: 'ok', durationMs, isAborted: reason === 'aborted', turnId: 't1', reason, ...(agentId ? { agentId } : {}) }) as const
+
+test('a long answer plays the completion sound through PowerShell on Windows', async ($, on) => {
+  world(on, { env: { OS: 'Windows_NT' } })
+  const played = recordPlayer(on)
+  on('turn.complete', async (_$, e) => ({ text: e.answer }))
+
+  await $.turn.complete(completed(20_000))
+  await flush($)
+
+  expect(played).toHaveLength(1)
+  expect(played[0]?.argv[0]).toBe('powershell')
+  expect(soundFile(played[0]!)).toMatch(/sounds\/complete\.wav$/)
+})
+
+test('short, interrupted and subagent turns play nothing', async ($, on) => {
+  world(on, { env: { OS: 'Windows_NT' } })
+  const played = recordPlayer(on)
+  on('turn.complete', async (_$, e) => ({ text: e.answer }))
+
+  await $.turn.complete(completed(14_000))
+  await $.turn.complete(completed(60_000, 'aborted'))
+  await $.turn.complete(completed(60_000, 'answer', 'agent-1'))
+  await flush($)
+
+  expect(played).toHaveLength(0)
+})
+
+test('the completion threshold and the sound file follow the options', { options: { completeMinSeconds: 0, completeSound: '/suoni/fatto.wav' } }, async ($, on) => {
+  world(on, { env: { OS: 'Windows_NT' }, files: { '/suoni/fatto.wav': 'RIFF' } })
+  const played = recordPlayer(on)
+  on('turn.complete', async (_$, e) => ({ text: e.answer }))
+
+  await $.turn.complete(completed(1_000))
+  await flush($)
+  expect(played.map(soundFile)).toEqual(['/suoni/fatto.wav'])
+})
+
+test('a missing custom file falls back to the bundled sound', { options: { completeMinSeconds: 0, completeSound: '/suoni/manca.wav' } }, async ($, on) => {
+  world(on, { env: { OS: 'Windows_NT' } })
+  quietToasts(on)
+  const played = recordPlayer(on)
+  on('turn.complete', async (_$, e) => ({ text: e.answer }))
+
+  await $.turn.complete(completed(1_000))
+  await flush($)
+  expect(soundFile(played[0]!)).toMatch(/sounds\/complete\.wav$/)
+})
+
+test('questions play the question sound once per burst', async ($, on) => {
+  world(on, { env: { OS: 'Windows_NT' } })
+  const played = recordPlayer(on)
+  on('tool.call', { tool: 'AskUserQuestion' }, async () => ({ result: { answers: {} } }))
+  on('classic.PermissionRequest', async () => ({}))
+
+  await $.tool.call({ tool: 'AskUserQuestion', questions: [] } as never)
+  await $.classic.PermissionRequest({ tool_name: 'Bash', tool_input: { command: 'ls' } })
+  await flush($)
+  expect(played.map(soundFile)).toHaveLength(1)
+  expect(soundFile(played[0]!)).toMatch(/sounds\/question\.wav$/)
+})
+
+test('disabled sounds stay silent', { options: { soundOnComplete: false, soundOnQuestion: false, completeMinSeconds: 0 } }, async ($, on) => {
+  world(on, { env: { OS: 'Windows_NT' } })
+  const played = recordPlayer(on)
+  on('turn.complete', async (_$, e) => ({ text: e.answer }))
+  on('classic.PermissionRequest', async () => ({}))
+
+  await $.turn.complete(completed(60_000))
+  await $.classic.PermissionRequest({ tool_name: 'Bash', tool_input: {} })
+  await flush($)
+  expect(played).toHaveLength(0)
+})
+
+test('the menu toggles a sound through /config', async ($, on) => {
+  world(on)
+  const set: unknown[] = []
+  on('config.set', async (_$, e) => {
+    set.push({ key: e.key, value: e.value })
+    return { value: e.value }
+  })
+  await $.session.measure(measure)
+  const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
+
+  await ui.press({ key: 'menu' })
+  expect((await ui.find({ type: 'Button', key: 'sound-complete' }))?.props.label).toBe('🔔 Suono completamento: on')
+  await ui.press({ key: 'sound-complete' })
+  expect(set).toEqual([{ key: 'statusbar.soundOnComplete', value: false }])
+
+  await ui.press({ key: 'menu' })
+  expect((await ui.find({ type: 'Button', key: 'sound-complete' }))?.props.label).toBe('🔕 Suono completamento: off')
+})

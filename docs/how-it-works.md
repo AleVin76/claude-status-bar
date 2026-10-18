@@ -57,6 +57,15 @@ The effort is shown as its first two letters after the model name.
 
 A numeric effort has no named level and is shown in the default color. The mapping is `EFFORT_STYLE` at the top of `hooks/register.ts`.
 
+## Sounds
+
+| Sound | Event | Condition |
+|---|---|---|
+| Completion | `turn.complete` | Main conversation, `reason` `answer`, `durationMs` ≥ `completeMinSeconds` |
+| Question | `tool.call` on `AskUserQuestion`, `classic.PermissionRequest`, `classic.Elicitation` | At most one sound every 3 seconds, so a question and its permission dialog make one sound |
+
+The sound runs in a separate process in the background: the hook passes the event on at once, and a sound that fails to play is ignored. `$.audio.play` is not used because it only has a player on macOS.
+
 ## Precision of the percentages
 
 | Segment | Decimals | Why |

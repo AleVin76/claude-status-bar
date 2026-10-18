@@ -6,6 +6,12 @@
 |---|---|---|---|
 | `locale` | `system` or a BCP 47 tag (`it-IT`, `en-GB`, …) | `system` | Locale for reset dates and times. `system` (or empty) uses the operating system's regional settings (see [How it works → Date and time format](how-it-works.md#date-and-time-format)). |
 
+| `soundOnComplete` | `true`, `false` | `true` | Completion sound |
+| `soundOnQuestion` | `true`, `false` | `true` | Question sound |
+| `completeSound` | `default` or the path of a WAV file | `default` | File for the completion sound |
+| `questionSound` | `default` or the path of a WAV file | `default` | File for the question sound |
+| `completeMinSeconds` | number ≥ 0 | `15` | Answers shorter than this play no completion sound |
+
 ## Changing an option
 
 **From Claude Code**: open `/config` and change the **Date/time locale** row. The mod reloads with the new value.
@@ -22,13 +28,32 @@ claude plugin install statusbar@claude-status-bar --config locale=it-IT
 {
   "pluginConfigs": {
     "statusbar@claude-status-bar": {
-      "options": { "locale": "system" }
+      "options": {
+        "locale": "system",
+        "soundOnComplete": true,
+        "soundOnQuestion": true,
+        "completeSound": "C:\\Suoni\\fatto.wav",
+        "questionSound": "default",
+        "completeMinSeconds": 15
+      }
     }
   }
 }
 ```
 
 For a folder loaded with `--plugin-dir` or `CLAUDE_CODE_PLUGIN_DIRS`, the key is `statusbar@inline`.
+
+## Sounds
+
+- **On/off**: from the **[≡]** menu (`🔔 Suono completamento`, `🔔 Suono domanda`), from `/config`, or in `settings.json`. The menu writes through `/config`, so all three always agree.
+- **Your own sound**: set `completeSound` / `questionSound` to the absolute path of a **WAV** file (the format Windows plays without extra components). In JSON, double the backslashes: `"C:\\Suoni\\fatto.wav"`. A missing file falls back to the bundled one with a notice.
+- **Try them**: `▶ Prova suoni` in the menu.
+
+| System | Player |
+|---|---|
+| Windows | PowerShell `System.Media.SoundPlayer` |
+| macOS | `afplay` |
+| Linux | `paplay`, else `aplay` |
 
 ## Prompt cache TTL
 

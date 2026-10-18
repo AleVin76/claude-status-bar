@@ -1,4 +1,12 @@
 import type { Color, EngineInterface, Register, RenderInput, RenderElement, SessionRateLimit, SessionUsage } from 'claude-code'
+import {
+  playCompleteSound,
+  playQuestionSound,
+  playSound,
+  readSoundSettings,
+  setSoundOption,
+  type SoundSettings,
+} from './sounds'
 
 type Ttl = '5m' | '1h'
 
@@ -340,7 +348,14 @@ type MenuItem = {
   onPress?: () => Promise<void> | void
 }
 
-// New actions go here: each becomes one entry of the menu row
+// Sound settings from the plugin options; a menu toggle updates them at once, ahead of the reload it causes
+let sounds: SoundSettings = readSoundSettings({})
+
+function onOff(value: boolean): string {
+  return value ? 'on' : 'off'
+}
+
+// New actions go here: each becomes one entry of the menu
 function menuItems($: EngineInterface): MenuItem[] {
   const other: Ttl = state.ttl === '5m' ? '1h' : '5m'
   const isLocked = state.ttlSource === 'force' || state.ttlSource === 'env'
@@ -349,6 +364,30 @@ function menuItems($: EngineInterface): MenuItem[] {
     isLocked
       ? { key: 'ttl', label: `🔒 Cache ${state.ttl} (${lockedBy})` }
       : { key: 'ttl', label: `⇄ Cache ${state.ttl} → ${other}`, onPress: () => switchTtl($) },
+    {
+      key: 'sound-complete',
+      label: `${sounds.onComplete ? '🔔' : '🔕'} Suono completamento: ${onOff(sounds.onComplete)}`,
+      onPress: async () => {
+        sounds = { ...sounds, onComplete: !sounds.onComplete }
+        await setSoundOption($, 'soundOnComplete', sounds.onComplete)
+      },
+    },
+    {
+      key: 'sound-question',
+      label: `${sounds.onQuestion ? '🔔' : '🔕'} Suono domanda: ${onOff(sounds.onQuestion)}`,
+      onPress: async () => {
+        sounds = { ...sounds, onQuestion: !sounds.onQuestion }
+        await setSoundOption($, 'soundOnQuestion', sounds.onQuestion)
+      },
+    },
+    {
+      key: 'sound-test',
+      label: '▶ Prova suoni',
+      onPress: async () => {
+        await playSound($, 'complete', sounds)
+        await playSound($, 'question', sounds)
+      },
+    },
   ]
 }
 
@@ -465,6 +504,7 @@ export const register: Register = (on, options) => {
   const configured = typeof options.locale === 'string' ? options.locale.trim() : ''
   const locale = configured.toLowerCase() === 'system' ? '' : configured
   if (locale !== '') state.dates = intlFormatter(locale)
+  sounds = readSoundSettings(options)
 
   on('session.start', async ($, e, next) => {
     // An explicit locale wins; otherwise the OS regional settings, resolved once per session
@@ -513,6 +553,28 @@ export const register: Register = (on, options) => {
   on('classic.ConfigChange', async ($, e, next) => {
     await resolveTtl($)
     $.ui.invalidate('ui.render')
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  // Sounds never hold up the event: they play in the background
+  on('turn.complete', async ($, e, next) => {
+    if (e.agentId === undefined && e.reason === 'answer') void playCompleteSound($, sounds, e.durationMs)
+    return next(e)
+  })
+
+  // Every question that waits for an answer: Claude's own questions, permission dialogs, MCP input requests
+  on('tool.call', { tool: 'AskUserQuestion' }, async ($, e, next) => {
+    void playQuestionSound($, sounds)
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  on('classic.PermissionRequest', async ($, e, next) => {
+    void playQuestionSound($, sounds)
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  on('classic.Elicitation', async ($, e, next) => {
+    void playQuestionSound($, sounds)
     return next(e)
   }).catch(($, e, next) => next(e))
 

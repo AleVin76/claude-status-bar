@@ -49,7 +49,10 @@ if claude plugin list --json | grep -q "\"id\": *\"${PLUGIN_ID}\""; then
   claude plugin update "$PLUGIN_ID"
 else
   step "Installing ${PLUGIN_ID}"
-  claude plugin install "$PLUGIN_ID" --scope user --config "locale=system"
+  # Every plugin option gets a stored value: an unset one makes Claude Code ask to configure the plugin
+  claude plugin install "$PLUGIN_ID" --scope user \
+    --config "locale=system" --config "soundOnComplete=true" --config "soundOnQuestion=true" \
+    --config "completeSound=default" --config "questionSound=default" --config "completeMinSeconds=15"
 fi
 
 # An update keeps a plugin that was disabled disabled: enable it explicitly
@@ -82,9 +85,14 @@ if "cacheTtl" in options:
     changes.append("removed obsolete statusbar option 'cacheTtl'")
 # Before 1.3.2 an empty locale meant "system"; an unset option makes Claude Code ask to configure the plugin
 plugin_options = data.setdefault("pluginConfigs", {}).setdefault(plugin_id, {}).setdefault("options", {})
-if not str(plugin_options.get("locale", "")).strip():
-    plugin_options["locale"] = "system"
-    changes.append("statusbar option 'locale' = system")
+# Options added by later versions, and an empty locale (before 1.3.2 it meant "system"), get their default
+defaults = {"locale": "system", "soundOnComplete": True, "soundOnQuestion": True,
+            "completeSound": "default", "questionSound": "default", "completeMinSeconds": 15}
+for name, value in defaults.items():
+    current = plugin_options.get(name)
+    if current is None or (isinstance(current, str) and not current.strip()):
+        plugin_options[name] = value
+        changes.append(f"statusbar option '{name}' = {json.dumps(value)}")
 if changes:
     if os.path.exists(path):
         shutil.copy2(path, backup)
