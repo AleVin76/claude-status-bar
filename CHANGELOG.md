@@ -1,108 +1,112 @@
-# Changelog
+# Registro delle modifiche
+
+## 1.11.1 — 2026-10-21
+
+- Documentazione, descrizioni del plugin e voci di `/config` tradotte in italiano.
 
 ## 1.11.0 — 2026-10-21
 
-- The value next to each bar (⏳ 🧠 🕒 📅) is drawn in the bar's color: green, yellow or red by level.
-- Each bar can be hidden on its own, keeping the colored value: `Barra: sì/no` in the blocks editor, or `:nobar` in the `blocks` option (`context:nobar`).
+- Il valore accanto a ogni barra (⏳ 🧠 🕒 📅) è disegnato nel colore della barra: verde, giallo o rosso in base al livello.
+- Ogni barra si può nascondere singolarmente, mantenendo il valore colorato: `Barra: sì/no` nell'editor dei blocchi, oppure `:nobar` nell'opzione `blocks` (`context:nobar`).
 
 ## 1.10.0 — 2026-10-21
 
-- Blocks editor in the [≡] menu (`⚙ Blocchi e righe…`): show, hide, order and place every block on row 1 or 2 with buttons and a preview, without going through `/config`.
+- Editor dei blocchi nel menu [≡] (`⚙ Blocchi e righe…`): mostra, nascondi, ordina e posiziona ogni blocco sulla riga 1 o 2 con pulsanti e anteprima, senza passare da `/config`.
 
 ## 1.9.0 — 2026-10-21
 
-- The bar can use two rows: in the `blocks` option a `/` starts a new row (`cache, context, 5h, 7d / model, speed, cost`). The [≡] menu sits on the last row and opens above all rows.
+- La barra può usare due righe: nell'opzione `blocks` una `/` inizia una nuova riga (`cache, context, 5h, 7d / model, speed, cost`). Il menu [≡] sta sull'ultima riga e si apre sopra tutte le righe.
 
 ## 1.8.0 — 2026-10-21
 
-- ⚡ new block: generation speed of the last answer, in output tokens per second.
-- `blocks` option: choose which blocks are shown and in which order (`cache, context, 5h, 7d, model, speed, cost`).
-- Permission sound also where Claude Code's built-in guard keeps mods off permission requests (managed machines, Team and Enterprise plans): it plays from the notice raised 6 seconds into a waiting prompt.
-- No more missing-executable warning in the debug log on Windows and Linux (the macOS locale lookup runs only on macOS).
+- ⚡ nuovo blocco: velocità di generazione dell'ultima risposta, in token di output al secondo.
+- Opzione `blocks`: scegli quali blocchi mostrare e in quale ordine (`cache, context, 5h, 7d, model, speed, cost`).
+- Suono dei permessi anche dove la protezione integrata di Claude Code tiene i mod fuori dalle richieste di permesso (macchine gestite, piani Team ed Enterprise): viene riprodotto dall'avviso che compare dopo 6 secondi di prompt in attesa.
+- Niente più avviso di eseguibile mancante nel log di debug su Windows e Linux (la lettura della locale di macOS avviene solo su macOS).
 
 ## 1.7.0 — 2026-10-18
 
-- Sounds: one when Claude finishes an answer of at least 15 seconds, another when it asks something (multiple-choice questions, permission requests, MCP input requests).
-- Each sound can be turned on or off on its own (from the [≡] menu or `/config`) and can use a WAV file of your own; `▶ Prova suoni` plays both.
-- New options: `soundOnComplete`, `soundOnQuestion`, `completeSound`, `questionSound`, `completeMinSeconds`. Installers store every option, so Claude Code never asks to configure the plugin.
+- Suoni: uno quando Claude termina una risposta di almeno 15 secondi, un altro quando chiede qualcosa (domande a scelta multipla, richieste di permesso, richieste di input MCP).
+- Ogni suono si può attivare o disattivare singolarmente (dal menu [≡] o da `/config`) e può usare un tuo file WAV; `▶ Prova suoni` li riproduce entrambi.
+- Nuove opzioni: `soundOnComplete`, `soundOnQuestion`, `completeSound`, `questionSound`, `completeMinSeconds`. Gli installer salvano tutte le opzioni, così Claude Code non chiede mai di configurare il plugin.
 
 ## 1.6.2 — 2026-10-17
 
-- Menu button drawn as `[≡]`; brackets and menu frame in the theme's `suggestion` color (`MENU_COLOR` in `hooks/register.ts`).
+- Pulsante del menu disegnato come `[≡]`; parentesi e cornice del menu nel colore `suggestion` del tema (`MENU_COLOR` in `hooks/register.ts`).
 
 ## 1.6.1 — 2026-10-17
 
-- Menu symbol is now `≡`: `☰` came from a fallback font in Windows terminals and broke the row when focused.
-- The menu opens upward as a framed vertical list above the bar, one action per line, right-aligned.
+- Il simbolo del menu ora è `≡`: `☰` veniva da un font di fallback nei terminali Windows e rompeva la riga quando era a fuoco.
+- Il menu si apre verso l'alto come elenco verticale incorniciato sopra la barra, un'azione per riga, allineato a destra.
 
 ## 1.6.0 — 2026-10-17
 
-- ☰ menu at the right end of the bar: opens a row of actions under it, closed by a choice, **Chiudi** or a second press. The cache TTL switch moved into it (`⇄ Cache 1h → 5m`).
+- Menu ☰ all'estremità destra della barra: apre sotto di sé una riga di azioni, che si chiude con una scelta, con **Chiudi** o con una seconda pressione. Il selettore del TTL della cache è stato spostato al suo interno (`⇄ Cache 1h → 5m`).
 
 ## 1.5.3 — 2026-10-17
 
-- Fix: 🤖 could show the `effortLevel` from `settings.json` (e.g. `xh`) instead of the effort actually in use. The bar now shows only the effort Claude Code sends with each request, and keeps it across reloads of the mod in the same session.
+- Correzione: 🤖 poteva mostrare l'`effortLevel` di `settings.json` (es. `xh`) invece dell'effort effettivamente in uso. Ora la barra mostra solo l'effort che Claude Code invia con ogni richiesta, e lo mantiene tra i ricaricamenti del mod nella stessa sessione.
 
 ## 1.5.2 — 2026-10-17
 
-- 🤖 effort shown from session start (`CLAUDE_CODE_EFFORT_LEVEL` or the `effortLevel` setting) and updated when a request starts, instead of only after the first answer; `/effort` changes show at once.
+- Effort 🤖 mostrato dall'avvio della sessione (`CLAUDE_CODE_EFFORT_LEVEL` o l'impostazione `effortLevel`) e aggiornato all'inizio di ogni richiesta, invece che solo dopo la prima risposta; le modifiche con `/effort` compaiono subito.
 
 ## 1.5.1 — 2026-10-17
 
-- 🤖 effort shown as its first two letters (`lo`, `me`, `hi`, `xh`, `ma`), keeping its color.
+- Effort 🤖 mostrato con le prime due lettere (`lo`, `me`, `hi`, `xh`, `ma`), mantenendo il suo colore.
 
 ## 1.5.0 — 2026-10-17
 
-- 🤖 effort level colored by strength: low gray, medium green, high yellow, xhigh orange, max red and bold.
+- Livello di effort 🤖 colorato in base all'intensità: low grigio, medium verde, high giallo, xhigh arancione, max rosso e grassetto.
 
 ## 1.4.4 — 2026-10-17
 
-- Percentages have a fixed-width integer part (3 columns) and, for context usage, always 2 decimals, so the row no longer shifts as values change.
+- Le percentuali hanno una parte intera a larghezza fissa (3 colonne) e, per l'uso del contesto, sempre 2 decimali, così la riga non si sposta più al variare dei valori.
 
 ## 1.4.3 — 2026-10-17
 
-- 🕒 and 📅 percentages shown as received, without padding zeros (`5%`, `23.5%`).
+- Percentuali di 🕒 e 📅 mostrate come ricevute, senza zeri di riempimento (`5%`, `23.5%`).
 
 ## 1.4.2 — 2026-10-17
 
-- 🧠 context usage computed from the token counts, so its two decimals are exact (Claude Code's own figure is a whole number).
+- Uso del contesto 🧠 calcolato dal conteggio dei token, così i due decimali sono esatti (il valore di Claude Code è un numero intero).
 
 ## 1.4.1 — 2026-10-17
 
-- Reached limits show the bare countdown, without the `reset tra` label.
+- I limiti raggiunti mostrano solo il conto alla rovescia, senza l'etichetta `reset tra`.
 
 ## 1.4.0 — 2026-10-17
 
-- 🕒 and 📅: once a limit is reached, the percentage and reset date are replaced by a live countdown to the reset (`reset tra 2:15:30`, `reset tra 2g 3:04:05`).
+- 🕒 e 📅: una volta raggiunto un limite, percentuale e data di reset vengono sostituite da un conto alla rovescia in tempo reale fino al reset (`reset tra 2:15:30`, `reset tra 2g 3:04:05`).
 
 ## 1.3.2 — 2026-10-17
 
-- Installers always leave the plugin enabled: they run `claude plugin enable` after installing or updating (an update alone kept a disabled plugin disabled), then check `claude plugin list` and stop with an error if it is not enabled.
-- Installers warn when `disableAllHooks` is `true`, which keeps every mod from loading.
-- The `locale` option defaults to `system`; installers set it when unset, so Claude Code no longer reports an unconfigured option.
+- Gli installer lasciano sempre il plugin abilitato: eseguono `claude plugin enable` dopo l'installazione o l'aggiornamento (un semplice aggiornamento lasciava disabilitato un plugin disabilitato), poi controllano `claude plugin list` e si fermano con un errore se non è abilitato.
+- Gli installer avvisano quando `disableAllHooks` è `true`, che impedisce il caricamento di qualsiasi mod.
+- L'opzione `locale` ha come predefinito `system`; gli installer la impostano se non è definita, così Claude Code non segnala più un'opzione non configurata.
 
 ## 1.3.1 — 2026-10-14
 
-- The ⇄ cache TTL switch is aligned to the right edge of the row.
+- Il selettore ⇄ del TTL della cache è allineato al bordo destro della riga.
 
 ## 1.3.0 — 2026-10-14
 
-- ⇄ button at the end of the bar switches Claude Code's prompt cache TTL between 5m and 1h (`promptCacheTtl` in `settings.json`); 🔒 when an environment variable fixes it.
-- The ⏳ countdown follows the TTL Claude Code actually uses (env variables, `promptCacheTtl`, automatic 1h on subscriptions) and the TTL of the last request.
-- The `cacheTtl` plugin option is removed; installers' `-CacheTtl` / `--cache-ttl` now set `promptCacheTtl` and clean up the old option.
+- Il pulsante ⇄ alla fine della barra cambia il TTL della cache del prompt di Claude Code tra 5m e 1h (`promptCacheTtl` in `settings.json`); 🔒 quando è fissato da una variabile d'ambiente.
+- Il conto alla rovescia ⏳ segue il TTL effettivamente usato da Claude Code (variabili d'ambiente, `promptCacheTtl`, 1h automatico con gli abbonamenti) e il TTL dell'ultima richiesta.
+- Rimossa l'opzione del plugin `cacheTtl`; `-CacheTtl` / `--cache-ttl` degli installer ora impostano `promptCacheTtl` e rimuovono la vecchia opzione.
 
 ## 1.2.0 — 2026-10-14
 
-- Weekly reset shows date and time.
-- Reset dates and times follow the operating system's regional settings (Windows custom formats included); new `locale` option to override them.
-- Cost shown without the `$` sign.
+- Il reset settimanale mostra data e ora.
+- Date e orari di reset seguono le impostazioni internazionali del sistema operativo (inclusi i formati personalizzati di Windows); nuova opzione `locale` per sovrascriverle.
+- Costo mostrato senza il simbolo `$`.
 
 ## 1.1.0 — 2026-10-14
 
-- Bars colored green / yellow / red by level (50% and 80% thresholds).
-- The row is drawn above the prompt without the `statusbar` label in front.
+- Barre colorate verde / giallo / rosso in base al livello (soglie al 50% e all'80%).
+- La riga è disegnata sopra il prompt senza l'etichetta `statusbar` davanti.
 
 ## 1.0.0 — 2026-10-14
 
-- First release: prompt cache countdown, context, 5-hour and weekly limits, model/effort, API-equivalent cost.
-- Automatic installers for Windows (PowerShell) and macOS/Linux (Bash).
+- Prima release: conto alla rovescia della cache del prompt, contesto, limiti a 5 ore e settimanale, modello/effort, costo equivalente API.
+- Installer automatici per Windows (PowerShell) e macOS/Linux (Bash).

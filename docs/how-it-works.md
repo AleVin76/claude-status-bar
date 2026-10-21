@@ -1,142 +1,142 @@
-# How it works
+# Come funziona
 
-The mod is a single hooks module, [`hooks/register.ts`](../hooks/register.ts), that runs inside Claude Code. It keeps a small in-memory snapshot and draws one row in the band above the prompt (`ui.render` hook on the `AbovePrompt` site). Unlike `$.ui.status`, that site accepts colored text and shows no plugin label.
+Il mod è un unico modulo di hook, [`hooks/register.ts`](../hooks/register.ts), che gira dentro Claude Code. Tiene in memoria una piccola istantanea dello stato e disegna una riga nella fascia sopra il prompt (hook `ui.render` sul punto `AbovePrompt`). A differenza di `$.ui.status`, quel punto accetta testo colorato e non mostra l'etichetta del plugin.
 
-## Colors
+## Colori
 
-| Level | Color (theme key) |
+| Livello | Colore (chiave del tema) |
 |---|---|
-| < 50% | green (`success`) |
-| 50–79% | yellow (`warning`) |
-| ≥ 80% | red (`error`) |
+| < 50% | verde (`success`) |
+| 50–79% | giallo (`warning`) |
+| ≥ 80% | rosso (`error`) |
 
-The value next to a bar (percentage, countdown, reset time) is drawn in the same color as the bar, also when the bar is hidden with `:nobar`. The thresholds are `WARNING_FROM` and `ERROR_FROM` at the top of `hooks/register.ts`. The ⏳ bar shows the time left, while its color is judged on the elapsed share: green right after a request, red near expiry.
+Il valore accanto a una barra (percentuale, conto alla rovescia, ora del reset) ha lo stesso colore della barra, anche quando la barra è nascosta con `:nobar`. Le soglie sono `WARNING_FROM` ed `ERROR_FROM`, in cima a `hooks/register.ts`. La barra ⏳ mostra il tempo rimanente, mentre il colore si basa sulla quota già trascorsa: verde subito dopo una richiesta, rosso vicino alla scadenza.
 
-## Data sources
+## Da dove arrivano i dati
 
-| Segment | Source | Refreshed |
+| Segmento | Fonte | Aggiornamento |
 |---|---|---|
-| ⏳ Cache | Time of the last main-loop API response (`turn.step` hook) plus the TTL that request used | Every second (`$.clock.every` + `$.ui.invalidate`) |
-| ≡ → ⇄ Cache | Same order Claude Code uses (below) | Session start, each request, each plan-limit change, each `settings.json` change |
-| 🧠 Context | `context.tokens / context.window` (Claude Code's own `context.percent` is rounded to a whole number) | `session.measure` |
-| 🕒 5-hour limit | `rateLimits` entry `five_hour` (`percentUsed`, `resetsAt`) | `session.measure` |
-| 📅 Weekly limit | `rateLimits` entry `seven_day` | `session.measure` |
-| 🤖 Model | `$.session.model()` | Session start and each request |
-| 🤖 Effort | `effort` the engine sends with the current request (`turn.step`), saved so a reload of the mod in the same session shows it again | Start of each request |
-| ⚡ Speed | Output tokens of the last main-loop response (thinking included) divided by the time from its first output chunk to its end (`turn.step` stream) | End of each request |
-| 💲 Cost | `cost.usd`, the same total as `/cost`, in US dollars | `session.measure` |
+| ⏳ Cache | Ora dell'ultima risposta API del loop principale (hook `turn.step`) più la durata (TTL) usata da quella richiesta | Ogni secondo (`$.clock.every` + `$.ui.invalidate`) |
+| ≡ → ⇄ Cache | Stesso ordine usato da Claude Code (vedi sotto) | Avvio della sessione, ogni richiesta, ogni variazione dei limiti del piano, ogni modifica di `settings.json` |
+| 🧠 Contesto | `context.tokens / context.window` (il `context.percent` di Claude Code è arrotondato all'intero) | `session.measure` |
+| 🕒 Limite di 5 ore | Voce `five_hour` di `rateLimits` (`percentUsed`, `resetsAt`) | `session.measure` |
+| 📅 Limite settimanale | Voce `seven_day` di `rateLimits` | `session.measure` |
+| 🤖 Modello | `$.session.model()` | Avvio della sessione e ogni richiesta |
+| 🤖 Effort | `effort` che il motore invia con la richiesta corrente (`turn.step`), salvato così che ricaricando il mod nella stessa sessione venga mostrato di nuovo | Inizio di ogni richiesta |
+| ⚡ Velocità | Token di output dell'ultima risposta del loop principale (thinking incluso) divisi per il tempo dal primo blocco di output alla fine (stream di `turn.step`) | Fine di ogni richiesta |
+| 💲 Costo | `cost.usd`, lo stesso totale di `/cost`, in dollari USA | `session.measure` |
 
-`session.measure` is raised by Claude Code after every turn and whenever a plan limit moves, so those segments carry the same figures as the native status line.
+Claude Code genera `session.measure` dopo ogni turno e ogni volta che un limite del piano cambia, quindi quei segmenti riportano gli stessi valori della status line nativa.
 
-## Date and time format
+## Formato di data e ora
 
-Reset labels show the time for the 5-hour window and date + time (without the year) for the weekly window. The format is resolved once per session:
+Le etichette del reset mostrano l'ora per la finestra di 5 ore e data + ora (senza anno) per la finestra settimanale. Il formato viene determinato una volta per sessione:
 
-| Source | Used when |
+| Fonte | Usata quando |
 |---|---|
-| `locale` option | Set to a non-empty value |
-| Windows: `Get-Culture` short date and short time patterns | Windows. Honors custom formats set in **Settings → Time & language → Region** (date order, separators, 12/24 h) |
-| `LC_ALL`, `LC_TIME`, `LANG` | macOS/Linux with a locale in the environment |
-| `defaults read -g AppleLocale` | macOS without a locale in the environment |
-| `en-US` | Nothing above is available |
+| Opzione `locale` | È impostata a un valore non vuoto |
+| Windows: formati brevi di data e ora di `Get-Culture` | Windows. Rispetta i formati personalizzati impostati in **Impostazioni → Data/ora e lingua → Area geografica** (ordine della data, separatori, 12/24 h) |
+| `LC_ALL`, `LC_TIME`, `LANG` | macOS/Linux con un locale nell'ambiente |
+| `defaults read -g AppleLocale` | macOS senza un locale nell'ambiente |
+| `en-US` | Nessuna delle fonti precedenti è disponibile |
 
-Examples for the weekly reset: `20/10 11:00` (it-IT, `dd/MM/yyyy` + `HH:mm`), `10/20 11:00 AM` (en-US), `20.10 11:00` (de-DE).
+Esempi per il reset settimanale: `20/10 11:00` (it-IT, `dd/MM/yyyy` + `HH:mm`), `10/20 11:00 AM` (en-US), `20.10 11:00` (de-DE).
 
-The mod's runtime does not inherit the system locale by itself, which is why it is read explicitly.
+Il runtime del mod non eredita da solo il locale di sistema, per questo viene letto esplicitamente.
 
-## Effort colors
+## Colori dell'effort
 
-The effort is shown as its first two letters after the model name.
+L'effort è mostrato con le sue prime due lettere dopo il nome del modello.
 
-| Effort | Shown | Color (theme key) |
+| Effort | Mostrato | Colore (chiave del tema) |
 |---|---|---|
-| `low` | `lo` | gray (`inactive`) |
-| `medium` | `me` | green (`success`) |
-| `high` | `hi` | yellow (`warning`) |
-| `xhigh` | `xh` | orange (`claude`) |
-| `max` | `ma` | red, bold (`error`) |
+| `low` | `lo` | grigio (`inactive`) |
+| `medium` | `me` | verde (`success`) |
+| `high` | `hi` | giallo (`warning`) |
+| `xhigh` | `xh` | arancione (`claude`) |
+| `max` | `ma` | rosso, grassetto (`error`) |
 
-A numeric effort has no named level and is shown in the default color. The mapping is `EFFORT_STYLE` at the top of `hooks/register.ts`.
+Un effort numerico non ha un livello con nome e viene mostrato nel colore predefinito. La corrispondenza è `EFFORT_STYLE`, in cima a `hooks/register.ts`.
 
-## Sounds
+## Suoni
 
-| Sound | Event | Condition |
+| Suono | Evento | Condizione |
 |---|---|---|
-| Completion | `turn.complete` | Main conversation, `reason` `answer`, `durationMs` ≥ `completeMinSeconds` |
-| Question | `tool.call` on `AskUserQuestion`, `classic.PermissionRequest`, `classic.Elicitation`, `classic.Notification` (permission and input notices) | At most one sound every 3 seconds, so a question and its permission dialog make one sound |
+| Completamento | `turn.complete` | Conversazione principale, `reason` `answer`, `durationMs` ≥ `completeMinSeconds` |
+| Domanda | `tool.call` su `AskUserQuestion`, `classic.PermissionRequest`, `classic.Elicitation`, `classic.Notification` (avvisi di permesso e di input) | Al massimo un suono ogni 3 secondi, così una domanda e la relativa finestra di permesso producono un solo suono |
 
-On managed machines and Team or Enterprise plans, Claude Code's built-in guard keeps user mods off `PermissionRequest`. There the permission sound comes from the notice Claude Code raises when a permission prompt has waited 6 seconds, so it plays with that delay. A notice for a prompt that already played is ignored.
+Sulle macchine gestite e sui piani Team o Enterprise, la protezione integrata di Claude Code tiene i mod utente lontane da `PermissionRequest`. In quel caso il suono di permesso arriva dall'avviso che Claude Code genera quando una richiesta di permesso è in attesa da 6 secondi, quindi suona con quel ritardo. Un avviso per una richiesta che ha già suonato viene ignorato.
 
-The sound runs in a separate process in the background: the hook passes the event on at once, and a sound that fails to play is ignored. `$.audio.play` is not used because it only has a player on macOS.
+Il suono gira in un processo separato in background: l'hook inoltra subito l'evento e un suono che non riesce a partire viene ignorato. `$.audio.play` non è usato perché ha un player solo su macOS.
 
-## Precision of the percentages
+## Precisione delle percentuali
 
-| Segment | Decimals | Why |
+| Segmento | Decimali | Perché |
 |---|---|---|
-| 🧠 Context | 2, exact | Computed from the token counts. Integer part on 3 columns: `  6.06%`, ` 85.06%`, `100.00%` |
-| 🕒 / 📅 Plan limits | As received, without padding zeros. Integer part on 3 columns: `  5%`, ` 23.5%`, `100%` | Anthropic reports plan usage already rounded and Claude Code keeps at most one decimal. No more precise figure reaches Claude Code |
+| 🧠 Contesto | 2, esatti | Calcolati dal conteggio dei token. Parte intera su 3 colonne: `  6.06%`, ` 85.06%`, `100.00%` |
+| 🕒 / 📅 Limiti del piano | Come ricevuti, senza zeri di riempimento. Parte intera su 3 colonne: `  5%`, ` 23.5%`, `100%` | Anthropic comunica l'uso del piano già arrotondato e Claude Code tiene al massimo un decimale. Nessun valore più preciso arriva a Claude Code |
 
-Padding uses a figure space (U+2007), as wide as a digit, so the columns stay aligned in the terminal and in the Desktop app.
+Il riempimento usa uno spazio numerico (U+2007), largo quanto una cifra, così le colonne restano allineate nel terminale e nell'app Desktop.
 
-## Reached limits
+## Limiti raggiunti
 
-When a plan window reaches 100%, its segment drops the percentage and the reset date and shows a live countdown to the reset instead, with a full red bar:
+Quando una finestra del piano arriva al 100%, il suo segmento toglie la percentuale e la data del reset e mostra al loro posto un conto alla rovescia in tempo reale fino al reset, con la barra piena e rossa:
 
 ```
 🕒 ██████████ 2:15:30 | 📅 ██████████ 2g 3:04:05
 ```
 
-The format is `m:ss`, `h:mm:ss`, or `Ng h:mm:ss` beyond a day. When the reset time has passed but Claude Code has not reported new figures yet, the segment reads `reset in corso` until the next response.
+Il formato è `m:ss`, `h:mm:ss`, oppure `Ng h:mm:ss` oltre il giorno. Quando l'ora del reset è passata ma Claude Code non ha ancora comunicato i nuovi valori, il segmento mostra `reset in corso` fino alla risposta successiva.
 
-## Prompt cache countdown
+## Conto alla rovescia della cache
 
-Anthropic's prompt cache keeps a prefix for a fixed time (5 minutes by default, 1 hour when extended) and every request that reads it restarts the timer. The mod therefore:
+La cache del prompt di Anthropic conserva un prefisso per un tempo fisso (5 minuti di default, 1 ora se estesa) e ogni richiesta che la legge fa ripartire il timer. Per questo il mod:
 
-- records the time each main-loop request completes (subagents run on their own prefix and are ignored);
-- shows `ttl - (now - last request)` as a bar and a `m:ss` / `h:mm:ss` countdown;
-- shows `scaduta` when the time is up: the next request will write the cache again (higher cost, slower first token);
-- resets to `--:--` after `/clear`, which starts a new conversation.
+- registra l'ora in cui si completa ogni richiesta del loop principale (i subagent lavorano su un prefisso proprio e vengono ignorati);
+- mostra `ttl - (now - last request)` come barra e come conto alla rovescia `m:ss` / `h:mm:ss`;
+- mostra `scaduta` quando il tempo è finito: la richiesta successiva scriverà di nuovo la cache (costo più alto, primo token più lento);
+- torna a `--:--` dopo `/clear`, che avvia una nuova conversazione.
 
-The countdown is an estimate computed on the client: it assumes the prefix was cached by the last request with the TTL in effect at that moment. Switching TTL does not change the entry already cached: the countdown follows the new value from the next request on.
+Il conto alla rovescia è una stima calcolata sul client: presuppone che il prefisso sia stato messo in cache dall'ultima richiesta con la durata (TTL) in vigore in quel momento. Cambiare durata non modifica la voce già in cache: il conto alla rovescia segue il nuovo valore dalla richiesta successiva.
 
-### Which TTL is in effect
+### Quale durata è in vigore
 
-The mod resolves the TTL in the same order as Claude Code:
+Il mod determina la durata (TTL) nello stesso ordine di Claude Code:
 
-1. `FORCE_PROMPT_CACHING_5M` → `5m` (locked)
-2. `CLAUDE_CODE_PROMPT_CACHE_TTL` → its value (locked)
-3. `promptCacheTtl` in the merged settings
+1. `FORCE_PROMPT_CACHING_5M` → `5m` (bloccata)
+2. `CLAUDE_CODE_PROMPT_CACHE_TTL` → il suo valore (bloccata)
+3. `promptCacheTtl` nelle impostazioni unite
 4. `ENABLE_PROMPT_CACHING_1H` → `1h`
-5. Automatic: `1h` when plan limits are reported and none is exhausted (a subscription within its limits), `5m` otherwise
+5. Automatica: `1h` quando i limiti del piano vengono comunicati e nessuno è esaurito (un abbonamento entro i suoi limiti), altrimenti `5m`
 
-Before the first response of a session no plan limit is known yet, so an automatic TTL reads `5m` until then.
+Prima della prima risposta di una sessione nessun limite del piano è ancora noto, quindi fino ad allora una durata automatica risulta `5m`.
 
-## Cost
+## Costo
 
-`💲` is what the session would have cost at API list prices. Claude Code computes it for every session, including those on a Pro/Max subscription, where it is not billed.
+`💲` è quanto sarebbe costata la sessione ai prezzi di listino dell'API. Claude Code lo calcola per ogni sessione, comprese quelle con abbonamento Pro/Max, dove non viene addebitato.
 
-## Limits
+## Limitazioni
 
-- 🕒 and 📅 appear only on a subscription plan: with an API key there are no plan windows to show.
-- Effort appears when the first request of a session starts, and a change made with `/effort` shows from the next request. Settings are not used to guess it: the level in use also depends on `--effort`, per-model settings and model defaults, which only Claude Code resolves.
-- Reset times are shown in the computer's local time zone.
+- 🕒 e 📅 compaiono solo con un piano in abbonamento: con una chiave API non ci sono finestre del piano da mostrare.
+- L'effort compare quando parte la prima richiesta di una sessione, e una modifica fatta con `/effort` si vede dalla richiesta successiva. Le impostazioni non vengono usate per indovinarlo: il livello effettivo dipende anche da `--effort`, dalle impostazioni per modello e dai default del modello, che solo Claude Code risolve.
+- Gli orari di reset sono mostrati nel fuso orario locale del computer.
 
-## Where it runs
+## Dove funziona
 
-| Where | Shown |
+| Dove | Mostrata |
 |---|---|
-| `claude` in a terminal (including IDE terminals and the JetBrains plugin) | Yes |
-| Code tab of Claude Desktop | Yes |
-| VS Code extension chat panel, `claude -p`, Agent SDK | Hooks run, nothing is drawn |
-| WSL sessions in Claude Desktop | No (plugins are not available there) |
+| `claude` in un terminale (compresi i terminali degli IDE e il plugin JetBrains) | Sì |
+| Scheda Code di Claude Desktop | Sì |
+| Pannello chat dell'estensione VS Code, `claude -p`, Agent SDK | Gli hook girano, ma non viene disegnato nulla |
+| Sessioni WSL in Claude Desktop | No (lì i plugin non sono disponibili) |
 
-## Troubleshooting
+## Risoluzione dei problemi
 
-| Symptom | Check |
+| Sintomo | Cosa controllare |
 |---|---|
-| No bar at all | `claude --version` ≥ 2.1.287; `/plugin` lists the mod as active; `disableAllHooks` is not `true` in `settings.json` |
-| Two bars | `statusLine` is still in `settings.json`: remove it |
-| Row briefly disappears | A survey is using the band above the prompt; the row comes back when it closes |
-| ⏳ always `--:--` | No request sent yet in this session |
-| 🕒 / 📅 missing | API-key login, or no response received yet |
-| Errors | Start with `claude --debug` and look for lines starting with `statusbar:` |
+| Nessuna barra | `claude --version` ≥ 2.1.287; `/plugin` elenca il mod come attivo; `disableAllHooks` non è `true` in `settings.json` |
+| Due barre | `statusLine` è ancora in `settings.json`: rimuovilo |
+| La riga sparisce per un attimo | Un sondaggio sta usando la fascia sopra il prompt; la riga torna quando si chiude |
+| ⏳ sempre `--:--` | Nessuna richiesta ancora inviata in questa sessione |
+| 🕒 / 📅 assenti | Accesso con chiave API, oppure nessuna risposta ancora ricevuta |
+| Errori | Avvia con `claude --debug` e cerca le righe che iniziano con `statusbar:` |

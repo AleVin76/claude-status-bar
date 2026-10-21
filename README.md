@@ -1,54 +1,53 @@
 # Claude Status Bar
 
-A [Claude Code mod](https://code.claude.com/docs/it/plugins/mods/overview) that adds a single colored status row directly above the prompt with everything you need to keep an eye on during a session:
+Un [mod di Claude Code](https://code.claude.com/docs/it/plugins/mods/overview) che aggiunge, subito sopra il prompt, una barra di stato colorata con tutto quello che conviene tenere d'occhio durante una sessione:
 
 ```
 ⏳ ███████░░░ 3:41 | 🧠 █░░░░░░░░░   6.00% | 🕒 █░░░░░░░░░   5% (11:00) | 📅 ░░░░░░░░░░   1% (20/10 11:00) | 🤖 Opus 5.5 me | ⚡  75 tok/s | 💲 1.23        [≡] [-]
 ```
 
-| Segment | Meaning |
+| Blocco | Significato |
 |---|---|
-| ⏳ | Time left before the prompt cache expires (`--:--` before the first request, `scaduta` once expired) |
-| 🧠 | Context window usage |
-| 🕒 | 5-hour plan limit, with reset time. Once the limit is reached: time left to the reset (`2:15:30`) |
-| 📅 | Weekly plan limit, with reset date and time. Once the limit is reached: time left to the reset (`2g 3:04:05`) |
-| ⚡ | Generation speed of the last answer, in output tokens per second |
-| 🤖 | Model and reasoning effort as its first two letters, colored by strength: `lo` gray, `me` green, `hi` yellow, `xh` orange, `ma` red and bold |
-| 💲 | What the session would have cost at API prices, in US dollars |
-| [≡] | Menu, right-aligned at the end of the row, in the theme's `suggestion` color (brackets and menu frame). Click it (or Tab + Enter) to open a framed list of actions that grows upward from the bar, one per line; a choice, **Chiudi** or a second press closes it |
+| ⏳ | Tempo che manca alla scadenza della cache del prompt (`--:--` prima della prima richiesta, `scaduta` quando è scaduta) |
+| 🧠 | Utilizzo della finestra di contesto |
+| 🕒 | Limite del piano sulle 5 ore, con l'ora di rinnovo. A limite raggiunto: tempo che manca al rinnovo (`2:15:30`) |
+| 📅 | Limite settimanale del piano, con data e ora di rinnovo. A limite raggiunto: tempo che manca al rinnovo (`2g 3:04:05`) |
+| ⚡ | Velocità di generazione dell'ultima risposta, in token di output al secondo |
+| 🤖 | Modello ed effort, indicato con le prime due lettere e colorato in base alla forza: `lo` grigio, `me` verde, `hi` giallo, `xh` arancione, `ma` rosso e grassetto |
+| 💲 | Quanto sarebbe costata la sessione ai prezzi delle API, in dollari USA |
+| [≡] | Menu, allineato a destra in fondo alla riga, nel colore `suggestion` del tema (parentesi e cornice del menu). Cliccalo (o Tab + Invio) per aprire sopra la barra un elenco di azioni, una per riga; si chiude con una scelta, con **Chiudi** o premendolo di nuovo |
 
-Menu actions:
+Azioni del menu:
 
-| Action | Effect |
+| Azione | Effetto |
 |---|---|
-| `⇄ Cache 1h → 5m` | Switches Claude Code's prompt cache TTL between `5m` and `1h`. Shown as `🔒 Cache 5m (…)` when an environment variable fixes it |
+| `⇄ Cache 1h → 5m` | Passa la durata della cache del prompt di Claude Code da `5m` a `1h` e viceversa. Compare come `🔒 Cache 5m (…)` quando la fissa una variabile d'ambiente |
+| `⚙ Blocchi e righe…` | Apre l'editor dei blocchi: mostra, nascondi, ordina e sposta ogni blocco sulla riga 1 o 2, con la barra di avanzamento attivabile per blocco e un'anteprima |
+| `🔔 Suono completamento: on` | Attiva o disattiva il suono di completamento |
+| `🔔 Suono domanda: on` | Attiva o disattiva il suono di domanda |
+| `▶ Prova suoni` | Riproduce i due suoni, per provarli |
 
-| `⚙ Blocchi e righe…` | Opens the blocks editor: show, hide, order and place each block on row 1 or 2, with a preview |
-| `🔔 Suono completamento: on` | Turns the completion sound on or off |
-| `🔔 Suono domanda: on` | Turns the question sound on or off |
-| `▶ Prova suoni` | Plays both sounds, to check them |
+Le barre sono **verdi** sotto il 50%, **gialle** dal 50% e **rosse** dall'80%, e il valore accanto a ogni barra prende lo stesso colore. Ogni barra si può nascondere singolarmente, lasciando il solo valore colorato. La barra ⏳ si svuota man mano che la cache invecchia e cambia colore in base al tempo trascorso. I colori seguono il tema di Claude Code (`success`, `warning`, `error`). Date e ore di rinnovo seguono le impostazioni internazionali del sistema operativo.
 
-## Sounds
+Quali blocchi compaiono, in che ordine e su quale delle due righe si decide con l'opzione `blocks` o con l'editor del menu: vedi [Configurazione → Blocchi](docs/configuration.md#blocchi).
 
-| Sound | Plays when | Default file |
+## Suoni
+
+| Suono | Quando suona | File predefinito |
 |---|---|---|
-| Completion | Claude finishes an answer that took at least 15 seconds (not for interrupted turns or subagents) | `sounds/complete.wav`, a rising three-note chime |
-| Question | Claude asks you something: a multiple-choice question, a permission request, an MCP input request. One sound per burst | `sounds/question.wav`, two rising notes |
+| Completamento | Claude termina una risposta durata almeno 15 secondi (non per le risposte interrotte né per i subagent) | `sounds/complete.wav`, tre note ascendenti |
+| Domanda | Claude ti chiede qualcosa: una domanda a scelta multipla, un permesso, un input richiesto da un server MCP. Un solo suono per gruppo di richieste | `sounds/question.wav`, due note ascendenti |
 
-Each sound can be turned on or off on its own, and each can use your own WAV file: see [Configuration → Sounds](docs/configuration.md#sounds). Sounds play on the computer running Claude Code (terminal, or local sessions of the Desktop app); cloud sessions are silent.
+Ogni suono si attiva o disattiva singolarmente e può usare un tuo file WAV: vedi [Configurazione → Suoni](docs/configuration.md#suoni). I suoni escono dal computer su cui gira Claude Code (terminale o sessioni locali dell'app Desktop); le sessioni in cloud restano mute.
 
-Which blocks appear, in which order and on which of up to two rows, is set by the `blocks` option: see [Configuration → Blocks](docs/configuration.md#blocks).
+## Requisiti
 
-Bars turn **green** below 50%, **yellow** from 50% and **red** from 80%, and the value next to each bar takes the same color. Each bar can be hidden on its own, leaving the colored value. The ⏳ bar drains as the cache ages and changes color on the elapsed share. Colors follow your Claude Code theme (`success`, `warning`, `error`). Reset dates and times follow the operating system's regional settings.
+- Claude Code **2.1.287** o successivo (`claude --version`)
+- Terminale o scheda Code dell'app Claude Desktop (vedi [Dove funziona](docs/how-it-works.md#dove-funziona))
 
-## Requirements
+## Installazione
 
-- Claude Code **2.1.287** or later (`claude --version`)
-- Terminal or the Code tab of the Claude Desktop app (see [Where it runs](docs/how-it-works.md#where-it-runs))
-
-## Installation
-
-### Automatic
+### Automatica
 
 **Windows (PowerShell)**
 
@@ -62,26 +61,26 @@ irm https://raw.githubusercontent.com/AleVin76/claude-status-bar/main/scripts/in
 curl -fsSL https://raw.githubusercontent.com/AleVin76/claude-status-bar/main/scripts/install.sh | bash
 ```
 
-The installer:
+L'installer:
 
-1. checks the Claude Code version;
-2. registers this repository as a plugin marketplace (or refreshes it);
-3. installs the `statusbar` mod at user scope (or updates it if already installed);
-4. enables it, also when it had been disabled before (an update alone keeps a disabled plugin disabled);
-5. edits `~/.claude/settings.json`, after saving a timestamped backup next to it: removes the old `statusLine`, sets `promptCacheTtl` when `-CacheTtl` is given, sets the `locale` option to `system` when unset, and drops the `cacheTtl` option used by versions before 1.3.0;
-6. checks with `claude plugin list` that the mod is installed **and enabled**, and stops with an error otherwise. It also warns when `disableAllHooks` is `true`, since that setting keeps every mod from loading.
+1. controlla la versione di Claude Code;
+2. registra questo repository come marketplace di plugin (o lo aggiorna);
+3. installa il mod `statusbar` a livello utente (o lo aggiorna se è già installato);
+4. lo attiva, anche se era stato disattivato (un semplice aggiornamento lascerebbe disattivato un plugin disattivato);
+5. modifica `~/.claude/settings.json`, dopo averne salvato accanto una copia di backup con data e ora: rimuove la vecchia `statusLine`, imposta `promptCacheTtl` se passi `-CacheTtl`, assegna un valore a ogni opzione del mod non ancora impostata e rimuove l'opzione `cacheTtl` delle versioni precedenti alla 1.3.0;
+6. verifica con `claude plugin list` che il mod sia installato **e attivo**, altrimenti si ferma con un errore. Avvisa anche se `disableAllHooks` vale `true`, perché quell'impostazione impedisce il caricamento di qualsiasi mod.
 
-Restart Claude Code, or run `/reload-plugins` in an open session.
+Poi riavvia Claude Code, oppure esegui `/reload-plugins` in una sessione aperta.
 
-Installer options:
+Opzioni dell'installer:
 
-| PowerShell | Bash | Environment variable (one-liner) | Effect |
+| PowerShell | Bash | Variabile d'ambiente (riga singola) | Effetto |
 |---|---|---|---|
-| `-CacheTtl 1h` | `--cache-ttl 1h` | `CSB_CACHE_TTL=1h` | Sets Claude Code's prompt cache TTL (`promptCacheTtl`) to `5m` or `1h`. Left out, the current setting is kept |
-| `-KeepStatusLine` | `--keep-statusline` | `CSB_KEEP_STATUSLINE=1` | Leave `statusLine` in `settings.json` untouched |
-| — | — | `CSB_SOURCE=<owner/repo or path>` | Install from a fork or a local clone |
+| `-CacheTtl 1h` | `--cache-ttl 1h` | `CSB_CACHE_TTL=1h` | Imposta la durata della cache del prompt di Claude Code (`promptCacheTtl`) a `5m` o `1h`. Se omessa, resta l'impostazione attuale |
+| `-KeepStatusLine` | `--keep-statusline` | `CSB_KEEP_STATUSLINE=1` | Lascia invariata la `statusLine` in `settings.json` |
+| — | — | `CSB_SOURCE=<owner/repo o percorso>` | Installa da un fork o da un clone locale |
 
-Example with options in a one-liner:
+Esempio con opzioni su una sola riga:
 
 ```powershell
 $env:CSB_CACHE_TTL = '1h'; irm https://raw.githubusercontent.com/AleVin76/claude-status-bar/main/scripts/install.ps1 | iex
@@ -91,28 +90,28 @@ $env:CSB_CACHE_TTL = '1h'; irm https://raw.githubusercontent.com/AleVin76/claude
 curl -fsSL https://raw.githubusercontent.com/AleVin76/claude-status-bar/main/scripts/install.sh | bash -s -- --cache-ttl 1h
 ```
 
-### From inside Claude Code
+### Da Claude Code
 
 ```
 /plugin install statusbar --marketplace AleVin76/claude-status-bar
 ```
 
-Answer `y` to add the marketplace, then pick the scope. This path does not touch `statusLine`: remove it from `settings.json` yourself if you want only one bar.
+Rispondi `y` per aggiungere il marketplace, poi scegli l'ambito. Questa strada non tocca la `statusLine`: se vuoi una sola barra, rimuovila tu da `settings.json`.
 
-### Manual
+### Manuale
 
-See [docs/installation.md](docs/installation.md).
+Vedi [docs/installation.md](docs/installation.md).
 
-## Update
+## Aggiornamento
 
-Run the installer again: it detects the existing installation and updates it. Alternatively:
+Esegui di nuovo l'installer: riconosce l'installazione esistente e la aggiorna. In alternativa:
 
 ```
 claude plugin marketplace update claude-status-bar
 claude plugin update statusbar@claude-status-bar
 ```
 
-## Uninstall
+## Disinstallazione
 
 **Windows**
 
@@ -127,15 +126,15 @@ irm https://raw.githubusercontent.com/AleVin76/claude-status-bar/main/scripts/un
 curl -fsSL https://raw.githubusercontent.com/AleVin76/claude-status-bar/main/scripts/uninstall.sh | bash -s -- --restore-statusline
 ```
 
-`-RestoreStatusLine` / `--restore-statusline` puts back the `statusLine` saved in the most recent backup.
+`-RestoreStatusLine` / `--restore-statusline` ripristina la `statusLine` salvata nel backup più recente.
 
-## Documentation
+## Documentazione
 
-- [Installation](docs/installation.md): automatic, plugin manager and manual installation
-- [Configuration](docs/configuration.md): options and where they are stored
-- [How it works](docs/how-it-works.md): data sources, cache countdown, limits
-- [Development](docs/development.md): project layout, validation, tests, release
+- [Installazione](docs/installation.md): installazione automatica, dal gestore dei plugin e manuale
+- [Configurazione](docs/configuration.md): opzioni, blocchi, suoni e dove vengono salvati
+- [Come funziona](docs/how-it-works.md): origine dei dati, conto alla rovescia della cache, limitazioni
+- [Sviluppo](docs/development.md): struttura del progetto, validazione, test, rilascio
 
-## License
+## Licenza
 
 [MIT](LICENSE)

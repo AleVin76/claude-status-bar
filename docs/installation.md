@@ -1,54 +1,54 @@
-# Installation
+# Installazione
 
-## Automatic (recommended)
+## Automatica (consigliata)
 
-See the [README](../README.md#automatic). The scripts are idempotent: running them again updates the mod instead of installing it twice.
+Vedi il [README](../README.md#automatica). Gli script sono idempotenti: eseguirli di nuovo aggiorna il mod invece di installarla due volte.
 
-What they change:
+Cosa modificano:
 
-| File / command | Change |
+| File / comando | Modifica |
 |---|---|
-| `claude plugin marketplace add AleVin76/claude-status-bar` | Adds `claude-status-bar` under `extraKnownMarketplaces` in `~/.claude/settings.json` |
-| `claude plugin install statusbar@claude-status-bar --scope user --config locale=system` | Installs the plugin for every project and stores its option (`pluginConfigs`) |
-| `claude plugin enable statusbar@claude-status-bar --scope user` | Sets `enabledPlugins."statusbar@claude-status-bar": true`, also after an update of a disabled plugin |
-| `~/.claude/settings.json` | Removes `statusLine` (unless `-KeepStatusLine` / `--keep-statusline`); sets `promptCacheTtl` with `-CacheTtl` / `--cache-ttl`; drops the pre-1.3.0 `cacheTtl` option |
-| `~/.claude/settings.json.<yyyyMMdd-HHmmss>.bak` | Backup written before any of the changes above |
+| `claude plugin marketplace add AleVin76/claude-status-bar` | Aggiunge `claude-status-bar` sotto `extraKnownMarketplaces` in `~/.claude/settings.json` |
+| `claude plugin install statusbar@claude-status-bar --scope user --config locale=system` | Installa il plugin per tutti i progetti e ne salva l'opzione (`pluginConfigs`) |
+| `claude plugin enable statusbar@claude-status-bar --scope user` | Imposta `enabledPlugins."statusbar@claude-status-bar": true`, anche dopo l'aggiornamento di un plugin disattivato |
+| `~/.claude/settings.json` | Rimuove `statusLine` (salvo `-KeepStatusLine` / `--keep-statusline`); imposta `promptCacheTtl` con `-CacheTtl` / `--cache-ttl`; elimina l'opzione `cacheTtl` precedente alla 1.3.0 |
+| `~/.claude/settings.json.<yyyyMMdd-HHmmss>.bak` | Backup scritto prima di qualsiasi modifica elencata sopra |
 
-On Windows `~` is `%USERPROFILE%`.
+Su Windows `~` corrisponde a `%USERPROFILE%`.
 
-### Execution policy (Windows)
+### Criteri di esecuzione (Windows)
 
-`irm … | iex` runs the script in memory and is not affected by the execution policy. To run a downloaded copy instead:
+`irm … | iex` esegue lo script in memoria e non è soggetto ai criteri di esecuzione. Per eseguire invece una copia scaricata:
 
 ```powershell
 irm https://raw.githubusercontent.com/AleVin76/claude-status-bar/main/scripts/install.ps1 -OutFile install.ps1
 powershell -ExecutionPolicy Bypass -File .\install.ps1 -CacheTtl 1h
 ```
 
-## Plugin manager
+## Gestore dei plugin
 
-From the Claude Code prompt:
+Dal prompt di Claude Code:
 
 ```
 /plugin install statusbar --marketplace AleVin76/claude-status-bar
 ```
 
-Or from the shell:
+Oppure dalla shell:
 
 ```bash
 claude plugin marketplace add AleVin76/claude-status-bar
 claude plugin install statusbar@claude-status-bar
 ```
 
-## Manual (from a local folder)
+## Manuale (da una cartella locale)
 
-1. Clone the repository or download the ZIP:
+1. Clona il repository o scarica lo ZIP:
 
    ```bash
    git clone https://github.com/AleVin76/claude-status-bar.git
    ```
 
-2. Load the folder in every session by adding it to `~/.claude/settings.json`:
+2. Carica la cartella in ogni sessione aggiungendola a `~/.claude/settings.json`:
 
    ```json
    {
@@ -58,29 +58,29 @@ claude plugin install statusbar@claude-status-bar
    }
    ```
 
-   Several folders are separated by `;` on Windows and `:` on macOS/Linux. For a single session use `claude --plugin-dir <folder>` instead.
+   Più cartelle si separano con `;` su Windows e con `:` su macOS/Linux. Per una singola sessione usa invece `claude --plugin-dir <folder>`.
 
-3. Remove the `statusLine` block from the same file if you want only this bar.
+3. Rimuovi il blocco `statusLine` dallo stesso file se vuoi solo questa barra.
 
-A folder loaded this way is read as `statusbar@inline`; see [configuration](configuration.md) for how its options are stored.
+Una cartella caricata in questo modo viene letta come `statusbar@inline`; vedi [configurazione](configuration.md) per come vengono salvate le sue opzioni.
 
-## Verify
+## Verifica
 
-The installer ends with `statusbar@claude-status-bar <version> installed and enabled`. To check by hand:
+L'installer termina con `statusbar@claude-status-bar <version> installed and enabled`. Per controllare a mano:
 
 ```bash
 claude plugin list
 ```
 
-The `statusbar@claude-status-bar` entry must show it enabled. If it does not, run `claude plugin enable statusbar@claude-status-bar`.
+La voce `statusbar@claude-status-bar` deve risultare attivata. In caso contrario, esegui `claude plugin enable statusbar@claude-status-bar`.
 
-Things that keep an enabled plugin from loading:
+Cosa impedisce il caricamento di un plugin attivato:
 
-| Cause | Fix |
+| Causa | Soluzione |
 |---|---|
-| `"disableAllHooks": true` in `settings.json` (the installer warns) | Set it to `false`; it also re-enables your other hooks |
-| `"enabledPlugins": { "statusbar@claude-status-bar": false }` in a project's `.claude/settings.json` | Remove that entry from the project |
-| Organization policy (`allowManagedModsOnly`, `allowManagedHooksOnly`) | Ask your administrator |
-| Session started with `--safe-mode` or `--bare` | Start it without the flag |
+| `"disableAllHooks": true` in `settings.json` (l'installer lo segnala) | Impostalo a `false`; riattiva anche gli altri tuoi hook |
+| `"enabledPlugins": { "statusbar@claude-status-bar": false }` nel file `.claude/settings.json` di un progetto | Rimuovi quella voce dal progetto |
+| Criteri dell'organizzazione (`allowManagedModsOnly`, `allowManagedHooksOnly`) | Chiedi al tuo amministratore |
+| Sessione avviata con `--safe-mode` o `--bare` | Avviala senza il flag |
 
-In Claude Code run `/plugin`: the line under the tabs shows `1 mod active · statusbar` (or the list of active mods). If the bar does not appear, see [How it works → Troubleshooting](how-it-works.md#troubleshooting).
+In Claude Code esegui `/plugin`: la riga sotto le schede mostra `1 mod active · statusbar` (o l'elenco dei mod attivi). Se la barra non compare, vedi [Come funziona → Risoluzione dei problemi](how-it-works.md#risoluzione-dei-problemi).

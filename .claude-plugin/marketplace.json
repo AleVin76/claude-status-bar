@@ -4,13 +4,13 @@
     "name": "Alessandro Vinciguerra"
   },
   "metadata": {
-    "description": "Claude Status Bar: a Claude Code mod that replaces the status line"
+    "description": "Claude Status Bar: mod di Claude Code che sostituisce la barra di stato"
   },
   "plugins": [
     {
       "name": "statusbar",
       "source": "./",
-      "description": "Status line: prompt cache countdown, context, plan limits, model/effort, API-equivalent cost"
+      "description": "Barra di stato sopra il prompt: conto alla rovescia della cache, contesto, limiti del piano, modello ed effort, velocità, costo equivalente API, suoni"
     }
   ]
 }

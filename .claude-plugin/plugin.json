@@ -1,7 +1,7 @@
 {
   "name": "statusbar",
-  "version": "1.11.0",
-  "description": "Status line: prompt cache countdown, context, plan limits, model/effort, API-equivalent cost",
+  "version": "1.11.1",
+  "description": "Barra di stato sopra il prompt: conto alla rovescia della cache, contesto, limiti del piano, modello ed effort, velocità, costo equivalente API, suoni",
   "author": {
     "name": "Alessandro Vinciguerra"
   },
@@ -11,44 +11,44 @@
   "userConfig": {
     "blocks": {
       "type": "string",
-      "title": "Blocks and order",
-      "description": "Blocks to show, in order, separated by commas; \"/\" starts a new row; \":nobar\" hides a block's bar (context:nobar). Ids: cache, context, 5h, 7d, model, speed, cost. \"default\" shows them all on one row",
+      "title": "Blocchi e righe",
+      "description": "Blocchi da mostrare, in ordine, separati da virgole; \"/\" inizia una nuova riga; \":nobar\" nasconde la barra di un blocco (context:nobar). Id: cache, context, 5h, 7d, model, speed, cost. \"default\" li mostra tutti su una riga",
       "default": "default"
     },
     "locale": {
       "type": "string",
-      "title": "Date/time locale",
-      "description": "BCP 47 locale for reset dates and times (e.g. it-IT, en-GB), or \"system\" for the operating system's regional settings",
+      "title": "Formato di data e ora",
+      "description": "Lingua BCP 47 per date e ore di rinnovo (es. it-IT, en-GB), oppure \"system\" per le impostazioni internazionali del sistema operativo",
       "default": "system"
     },
     "soundOnComplete": {
       "type": "boolean",
-      "title": "Completion sound",
-      "description": "Play a sound when Claude finishes an answer",
+      "title": "Suono di completamento",
+      "description": "Riproduce un suono quando Claude termina una risposta",
       "default": true
     },
     "soundOnQuestion": {
       "type": "boolean",
-      "title": "Question sound",
-      "description": "Play a sound when Claude asks a question, a permission or an MCP input",
+      "title": "Suono di domanda",
+      "description": "Riproduce un suono quando Claude fa una domanda, chiede un permesso o un input MCP",
       "default": true
     },
     "completeSound": {
       "type": "string",
-      "title": "Completion sound file",
-      "description": "Path of a WAV file, or \"default\" for the bundled sound",
+      "title": "File del suono di completamento",
+      "description": "Percorso di un file WAV, oppure \"default\" per il suono incluso",
       "default": "default"
     },
     "questionSound": {
       "type": "string",
-      "title": "Question sound file",
-      "description": "Path of a WAV file, or \"default\" for the bundled sound",
+      "title": "File del suono di domanda",
+      "description": "Percorso di un file WAV, oppure \"default\" per il suono incluso",
       "default": "default"
     },
     "completeMinSeconds": {
       "type": "number",
-      "title": "Completion sound minimum (s)",
-      "description": "Play the completion sound only for answers at least this long",
+      "title": "Durata minima per il suono di completamento (s)",
+      "description": "Il suono di completamento suona solo per risposte lunghe almeno questo numero di secondi",
       "default": 15,
       "min": 0
     }

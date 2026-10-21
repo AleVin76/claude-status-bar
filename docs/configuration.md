@@ -1,29 +1,28 @@
-# Configuration
+# Configurazione
 
-## Options
+## Opzioni
 
-| Option | Values | Default | Description |
+| Opzione | Valori | Predefinito | Descrizione |
 |---|---|---|---|
-| `blocks` | `default` or block ids separated by commas, `/` between rows | `default` | Blocks shown, their order and row, see [Blocks](#blocks) |
-| `locale` | `system` or a BCP 47 tag (`it-IT`, `en-GB`, …) | `system` | Locale for reset dates and times. `system` (or empty) uses the operating system's regional settings (see [How it works → Date and time format](how-it-works.md#date-and-time-format)). |
+| `blocks` | `default` oppure id dei blocchi separati da virgole, `/` tra le righe | `default` | Blocchi mostrati, con ordine e riga, vedi [Blocchi](#blocchi) |
+| `locale` | `system` oppure un tag BCP 47 (`it-IT`, `en-GB`, …) | `system` | Impostazioni locali per date e orari di reset. `system` (o vuoto) usa le impostazioni internazionali del sistema operativo (vedi [Come funziona → Formato di data e ora](how-it-works.md#formato-di-data-e-ora)). |
+| `soundOnComplete` | `true`, `false` | `true` | Suono di completamento |
+| `soundOnQuestion` | `true`, `false` | `true` | Suono di domanda |
+| `completeSound` | `default` oppure il percorso di un file WAV | `default` | File per il suono di completamento |
+| `questionSound` | `default` oppure il percorso di un file WAV | `default` | File per il suono di domanda |
+| `completeMinSeconds` | numero ≥ 0 | `15` | Le risposte più brevi di questo valore non riproducono il suono di completamento |
 
-| `soundOnComplete` | `true`, `false` | `true` | Completion sound |
-| `soundOnQuestion` | `true`, `false` | `true` | Question sound |
-| `completeSound` | `default` or the path of a WAV file | `default` | File for the completion sound |
-| `questionSound` | `default` or the path of a WAV file | `default` | File for the question sound |
-| `completeMinSeconds` | number ≥ 0 | `15` | Answers shorter than this play no completion sound |
+## Modificare un'opzione
 
-## Changing an option
+**Da Claude Code**: apri `/config` e modifica la riga **Formato di data e ora**. Il mod si ricarica con il nuovo valore.
 
-**From Claude Code**: open `/config` and change the **Date/time locale** row. The mod reloads with the new value.
-
-**At install time**:
+**In fase di installazione**:
 
 ```bash
 claude plugin install statusbar@claude-status-bar --config locale=it-IT
 ```
 
-**In `settings.json`**: options live under `pluginConfigs`, keyed by plugin id:
+**In `settings.json`**: le opzioni stanno sotto `pluginConfigs`, con l'id del plugin come chiave:
 
 ```json
 {
@@ -43,46 +42,46 @@ claude plugin install statusbar@claude-status-bar --config locale=it-IT
 }
 ```
 
-For a folder loaded with `--plugin-dir` or `CLAUDE_CODE_PLUGIN_DIRS`, the key is `statusbar@inline`.
+Per una cartella caricata con `--plugin-dir` o `CLAUDE_CODE_PLUGIN_DIRS`, la chiave è `statusbar@inline`.
 
-## Blocks
+## Blocchi
 
-The `blocks` option lists the blocks to show, in the order they appear. Leave out a block to hide it; `default` (or empty) shows every block in the default order on one row. A `/` starts a new row, so the bar can take two lines.
+L'opzione `blocks` elenca i blocchi da mostrare, nell'ordine in cui compaiono. Ometti un blocco per nasconderlo; `default` (o vuoto) mostra tutti i blocchi nell'ordine predefinito su una sola riga. Una `/` inizia una nuova riga, così la barra può occupare due righe.
 
-| Id | Block |
+| Id | Blocco |
 |---|---|
-| `cache` | ⏳ Prompt cache countdown |
-| `context` | 🧠 Context window usage |
-| `5h` | 🕒 5-hour plan limit |
-| `7d` | 📅 Weekly plan limit |
-| `model` | 🤖 Model and effort |
-| `speed` | ⚡ Output tokens per second of the last answer |
-| `cost` | 💲 API-equivalent cost |
+| `cache` | ⏳ Countdown della cache del prompt |
+| `context` | 🧠 Uso della finestra di contesto |
+| `5h` | 🕒 Limite del piano a 5 ore |
+| `7d` | 📅 Limite settimanale del piano |
+| `model` | 🤖 Modello e livello di effort |
+| `speed` | ⚡ Token di output al secondo dell'ultima risposta |
+| `cost` | 💲 Costo equivalente API |
 
-Examples:
+Esempi:
 
-| `blocks` | Row |
+| `blocks` | Riga |
 |---|---|
 | `default` | `⏳ … \| 🧠 … \| 🕒 … \| 📅 … \| 🤖 … \| ⚡ … \| 💲 …` |
 | `model, speed, context` | `🤖 … \| ⚡ … \| 🧠 …` |
 | `5h, 7d, cache` | `🕒 … \| 📅 … \| ⏳ …` |
-| `cache, context, 5h, 7d / model, speed, cost` | two rows: `⏳ … \| 🧠 … \| 🕒 … \| 📅 …` above `🤖 … \| ⚡ … \| 💲 …` |
+| `cache, context, 5h, 7d / model, speed, cost` | due righe: `⏳ … \| 🧠 … \| 🕒 … \| 📅 …` sopra `🤖 … \| ⚡ … \| 💲 …` |
 
-The easiest way is the editor: **[≡] → ⚙ Blocchi e righe…** opens a panel listing every block under *Riga 1*, *Riga 2* and *Nascosti*:
+Il modo più semplice è l'editor: **[≡] → ⚙ Blocchi e righe…** apre un pannello che elenca tutti i blocchi sotto *Riga 1*, *Riga 2* e *Nascosti*:
 
-| Button | Effect |
+| Pulsante | Effetto |
 |---|---|
-| `↑` `↓` | Move the block within its row |
-| `→ Riga 2` / `→ Riga 1` | Move the block to the end of the other row |
-| `Nascondi` / `Mostra` | Hide the block, or show it again at the end of row 1 |
-| `Barra: sì` / `Barra: no` | Show or hide the progress bar of ⏳ 🧠 🕒 📅; the value keeps its color |
-| `Salva` | Apply and store the layout (as the `blocks` option) |
-| `Predefiniti` | Every block on one row, default order |
-| `Annulla` (or Esc) | Close without changes |
+| `↑` `↓` | Sposta il blocco all'interno della sua riga |
+| `→ Riga 2` / `→ Riga 1` | Sposta il blocco in fondo all'altra riga |
+| `Nascondi` / `Mostra` | Nasconde il blocco, o lo mostra di nuovo in fondo alla riga 1 |
+| `Barra: sì` / `Barra: no` | Mostra o nasconde la barra di avanzamento di ⏳ 🧠 🕒 📅; il valore mantiene il suo colore |
+| `Salva` | Applica e memorizza il layout (come opzione `blocks`) |
+| `Predefiniti` | Tutti i blocchi su una riga, in ordine predefinito |
+| `Annulla` (o Esc) | Chiude senza modifiche |
 
-Move between buttons with Tab and press with Enter, or click them. A preview line shows the result before saving.
+Spostati tra i pulsanti con Tab e premili con Invio, oppure cliccali. Una riga di anteprima mostra il risultato prima del salvataggio.
 
-The same layout can be typed in `/config` (**Blocks and order**) or in `settings.json`:
+Lo stesso layout si può scrivere in `/config` (**Blocchi e righe**) o in `settings.json`:
 
 ```json
 "pluginConfigs": {
@@ -90,48 +89,48 @@ The same layout can be typed in `/config` (**Blocks and order**) or in `settings
 }
 ```
 
-Add `:nobar` to a block with a bar (`cache`, `context`, `5h`, `7d`) to draw only its value, still colored by level: `cache, context:nobar, 5h:nobar, 7d / model, speed, cost`.
+Aggiungi `:nobar` a un blocco con barra (`cache`, `context`, `5h`, `7d`) per mostrarne solo il valore, sempre colorato in base al livello: `cache, context:nobar, 5h:nobar, 7d / model, speed, cost`.
 
-Unknown ids are ignored and named in a notice at session start. A block listed twice is shown where it first appears. The [≡] menu is always shown, at the right end of the last row, and opens above all rows. A row with nothing to show yet (plan limits before the first answer) takes no line.
+Gli id sconosciuti vengono ignorati e segnalati in un avviso all'avvio della sessione. Un blocco elencato due volte viene mostrato nella prima posizione in cui compare. Il menu [≡] è sempre visibile, all'estremità destra dell'ultima riga, e si apre sopra tutte le righe. Una riga che non ha ancora nulla da mostrare (i limiti del piano prima della prima risposta) non occupa spazio.
 
-## Sounds
+## Suoni
 
-- **On/off**: from the **[≡]** menu (`🔔 Suono completamento`, `🔔 Suono domanda`), from `/config`, or in `settings.json`. The menu writes through `/config`, so all three always agree.
-- **Your own sound**: set `completeSound` / `questionSound` to the absolute path of a **WAV** file (the format Windows plays without extra components). In JSON, double the backslashes: `"C:\\Suoni\\fatto.wav"`. A missing file falls back to the bundled one with a notice.
-- **Try them**: `▶ Prova suoni` in the menu.
+- **Attivazione/disattivazione**: dal menu **[≡]** (`🔔 Suono completamento`, `🔔 Suono domanda`), da `/config` o in `settings.json`. Il menu scrive tramite `/config`, quindi i tre restano sempre allineati.
+- **Un suono personalizzato**: imposta `completeSound` / `questionSound` sul percorso assoluto di un file **WAV** (il formato che Windows riproduce senza componenti aggiuntivi). In JSON raddoppia le barre rovesciate: `"C:\\Suoni\\fatto.wav"`. Se il file non esiste, viene usato quello incluso, con un avviso.
+- **Provali**: `▶ Prova suoni` nel menu.
 
-| System | Player |
+| Sistema | Lettore |
 |---|---|
 | Windows | PowerShell `System.Media.SoundPlayer` |
 | macOS | `afplay` |
-| Linux | `paplay`, else `aplay` |
+| Linux | `paplay`, altrimenti `aplay` |
 
-## Prompt cache TTL
+## Durata della cache
 
-The cache duration is Claude Code's own setting, not an option of the mod: the mod reads it to drive the ⏳ countdown and lets you change it from the bar.
+La durata (TTL) della cache è un'impostazione di Claude Code, non un'opzione del mod: il mod la legge per gestire il countdown ⏳ e ti permette di cambiarla dalla barra.
 
-| How | Effect |
+| Come | Effetto |
 |---|---|
-| **≡ menu → ⇄ Cache** on the bar | Switches between `5m` and `1h` by writing `promptCacheTtl` to `~/.claude/settings.json`. Applies from the next request |
-| `"promptCacheTtl": "5m"` or `"1h"` in `settings.json` | Same, by hand |
-| Installer `-CacheTtl` / `--cache-ttl` | Same, at install time |
-| Env `CLAUDE_CODE_PROMPT_CACHE_TTL=5m` / `1h` | Wins over the setting; the menu item shows 🔒 and cannot be chosen |
-| Env `FORCE_PROMPT_CACHING_5M=1` | Forces 5 minutes over everything; the menu item shows 🔒 |
-| Nothing set | Automatic: 1 hour on a Claude subscription within its limits, 5 minutes with an API key, Bedrock, Vertex or Foundry |
+| **Menu ≡ → ⇄ Cache** sulla barra | Alterna tra `5m` e `1h` scrivendo `promptCacheTtl` in `~/.claude/settings.json`. Vale dalla richiesta successiva |
+| `"promptCacheTtl": "5m"` o `"1h"` in `settings.json` | Uguale, a mano |
+| Installer `-CacheTtl` / `--cache-ttl` | Uguale, in fase di installazione |
+| Variabile d'ambiente `CLAUDE_CODE_PROMPT_CACHE_TTL=5m` / `1h` | Prevale sull'impostazione; la voce di menu mostra 🔒 e non è selezionabile |
+| Variabile d'ambiente `FORCE_PROMPT_CACHING_5M=1` | Forza 5 minuti su tutto; la voce di menu mostra 🔒 |
+| Nessuna impostazione | Automatico: 1 ora con un abbonamento Claude entro i suoi limiti, 5 minuti con una API key, Bedrock, Vertex o Foundry |
 
-The 1-hour cache keeps the prefix warm across longer pauses, but with an API key its writes are billed at a higher rate.
+La cache da 1 ora mantiene il prefisso in cache anche durante pause più lunghe, ma con una API key le scritture vengono fatturate a una tariffa più alta.
 
-A `promptCacheTtl` in a project's `.claude/settings.local.json` or `.claude/settings.json` wins over the user one: the button then reports that the project imposes another value.
+Un `promptCacheTtl` nel file `.claude/settings.local.json` o `.claude/settings.json` di un progetto prevale su quello utente: in quel caso il pulsante segnala che il progetto impone un altro valore.
 
-Organizations whose managed settings restrict mods may stop the mod from writing `settings.json`; the button then has no effect.
+Le organizzazioni con impostazioni gestite che limitano i mod possono impedire al mod di scrivere `settings.json`; in quel caso il pulsante non ha effetto.
 
-Versions before 1.3.0 had a `cacheTtl` plugin option that only changed the countdown. It is ignored now, and the installer removes it.
+Le versioni precedenti alla 1.3.0 avevano un'opzione del plugin `cacheTtl` che cambiava solo il countdown. Ora viene ignorata e l'installer la rimuove.
 
-## Coexistence with `statusLine`
+## Convivenza con `statusLine`
 
-The mod draws in the band directly above the prompt. It does not replace the command-based `statusLine` setting: if that is still configured, both are shown. The installer removes it for you; otherwise delete the `statusLine` block from `settings.json`.
+Il mod disegna nella fascia subito sopra il prompt. Non sostituisce l'impostazione `statusLine` basata su comando: se è ancora configurata, vengono mostrate entrambe. L'installer la rimuove per te; altrimenti elimina il blocco `statusLine` da `settings.json`.
 
-## Turning it off
+## Disattivazione
 
-- One session: start Claude Code with `--safe-mode`.
-- Permanently: disable the plugin in `/plugin` → **Installed**, or uninstall it (see the [README](../README.md#uninstall)).
+- Per una sessione: avvia Claude Code con `--safe-mode`.
+- In modo permanente: disattiva il plugin in `/plugin` → **Installed**, oppure disinstallalo (vedi il [README](../README.md#disinstallazione)).

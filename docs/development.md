@@ -1,65 +1,65 @@
-# Development
+# Sviluppo
 
-## Layout
+## Struttura
 
 ```
 .claude-plugin/
-  plugin.json        Plugin manifest (name, version, userConfig)
-  marketplace.json   Makes the repository installable with /plugin install
+  plugin.json        Manifest del plugin (nome, versione, userConfig)
+  marketplace.json   Rende il repository installabile con /plugin install
 hooks/
-  hooks.json         Points Claude Code at the hooks module
-  register.ts        The mod
-  sounds.ts          Sound playback and settings
-  register.test.ts   Tests run by `claude plugin test`
+  hooks.json         Indica a Claude Code il modulo degli hook
+  register.ts        Il mod
+  sounds.ts          Riproduzione e impostazioni dei suoni
+  register.test.ts   Test eseguiti da `claude plugin test`
 sounds/
-  complete.wav / question.wav    Bundled sounds
+  complete.wav / question.wav    Suoni inclusi
 scripts/
-  install.ps1 / install.sh       Automatic installers
-  uninstall.ps1 / uninstall.sh   Uninstallers
-docs/                Documentation
+  install.ps1 / install.sh       Installer automatici
+  uninstall.ps1 / uninstall.sh   Disinstallazione
+docs/                Documentazione
 ```
 
-## Add a menu action
+## Aggiungere un'azione al menu
 
-Menu actions are the entries returned by `menuItems()` in `hooks/register.ts`:
+Le azioni del menu sono le voci restituite da `menuItems()` in `hooks/register.ts`:
 
 ```ts
 { key: 'my-action', label: '✱ My action', onPress: async () => { /* ... */ } }
 ```
 
-An item without `onPress` is drawn dimmed and cannot be chosen. The menu closes before `onPress` runs.
+Una voce senza `onPress` viene disegnata attenuata e non si può selezionare. Il menu si chiude prima che venga eseguito `onPress`.
 
-## Run from a working copy
+## Eseguire da una copia di lavoro
 
 ```bash
 claude --plugin-dir .
 ```
 
-The folder is watched: saving `hooks/register.ts` reloads the mod in the open session.
+La cartella è monitorata: salvando `hooks/register.ts` il mod si ricarica nella sessione aperta.
 
-## Validate and test
+## Validazione e test
 
 ```bash
 claude plugin validate .
 claude plugin test .
 ```
 
-`validate` lists the events the module hooks and the API calls it makes:
+`validate` elenca gli eventi a cui il modulo si aggancia e le chiamate API che effettua:
 
 ```
 hooks: session.start, session.measure, turn.step, classic.ConfigChange, session.end, ui.render{component=AbovePrompt}
 calls: $.clock.every, $.clock.now, $.env.get, $.fs.exists, $.fs.read, $.fs.write, $.process.run, $.session.model, $.session.usage, $.settings.read, $.ui.invalidate, $.ui.resolve, $.ui.toast
 ```
 
-## Type checking
+## Controllo dei tipi
 
-Once the mod has been loaded with `--plugin-dir`, Claude Code writes the API declarations to `.claude-plugin/types/` (ignored by git) together with a `tsconfig.json`:
+Dopo che il mod è stato caricato con `--plugin-dir`, Claude Code scrive le dichiarazioni dell'API in `.claude-plugin/types/` (ignorata da git) insieme a un `tsconfig.json`:
 
 ```bash
 tsc -p .
 ```
 
-## Test the installers against a local clone
+## Provare gli installer su un clone locale
 
 ```bash
 CSB_SOURCE="$PWD" ./scripts/install.sh --cache-ttl 1h
@@ -71,8 +71,8 @@ $env:CSB_SOURCE = (Get-Location).Path; .\scripts\install.ps1 -CacheTtl 1h
 .\scripts\uninstall.ps1 -RestoreStatusLine
 ```
 
-## Release
+## Rilascio
 
-1. Bump `version` in `.claude-plugin/plugin.json` and add an entry to `CHANGELOG.md`.
-2. Commit, tag (`git tag v1.1.0`) and push with tags.
-3. Users get it with the installer or `claude plugin update statusbar@claude-status-bar`.
+1. Aggiorna `version` in `.claude-plugin/plugin.json` e aggiungi una voce a `CHANGELOG.md`.
+2. Fai commit, crea il tag (`git tag v1.1.0`) e fai push insieme ai tag.
+3. Gli utenti la ottengono con l'installer o con `claude plugin update statusbar@claude-status-bar`.
