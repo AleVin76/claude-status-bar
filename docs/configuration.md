@@ -4,7 +4,7 @@
 
 | Option | Values | Default | Description |
 |---|---|---|---|
-| `blocks` | `default` or block ids separated by commas | `default` | Blocks shown and their order, see [Blocks](#blocks) |
+| `blocks` | `default` or block ids separated by commas, `/` between rows | `default` | Blocks shown, their order and row, see [Blocks](#blocks) |
 | `locale` | `system` or a BCP 47 tag (`it-IT`, `en-GB`, …) | `system` | Locale for reset dates and times. `system` (or empty) uses the operating system's regional settings (see [How it works → Date and time format](how-it-works.md#date-and-time-format)). |
 
 | `soundOnComplete` | `true`, `false` | `true` | Completion sound |
@@ -47,7 +47,7 @@ For a folder loaded with `--plugin-dir` or `CLAUDE_CODE_PLUGIN_DIRS`, the key is
 
 ## Blocks
 
-The `blocks` option lists the blocks to show, in the order they appear. Leave out a block to hide it; `default` (or empty) shows every block in the default order.
+The `blocks` option lists the blocks to show, in the order they appear. Leave out a block to hide it; `default` (or empty) shows every block in the default order on one row. A `/` starts a new row, so the bar can take two lines.
 
 | Id | Block |
 |---|---|
@@ -66,6 +66,7 @@ Examples:
 | `default` | `⏳ … \| 🧠 … \| 🕒 … \| 📅 … \| 🤖 … \| ⚡ … \| 💲 …` |
 | `model, speed, context` | `🤖 … \| ⚡ … \| 🧠 …` |
 | `5h, 7d, cache` | `🕒 … \| 📅 … \| ⏳ …` |
+| `cache, context, 5h, 7d / model, speed, cost` | two rows: `⏳ … \| 🧠 … \| 🕒 … \| 📅 …` above `🤖 … \| ⚡ … \| 💲 …` |
 
 Set it from `/config` (**Blocks and order**) or in `settings.json`:
 
@@ -75,7 +76,7 @@ Set it from `/config` (**Blocks and order**) or in `settings.json`:
 }
 ```
 
-Unknown ids are ignored and named in a notice at session start. The [≡] menu is always shown.
+Unknown ids are ignored and named in a notice at session start. A block listed twice is shown where it first appears. The [≡] menu is always shown, at the right end of the last row, and opens above all rows. A row with nothing to show yet (plan limits before the first answer) takes no line.
 
 ## Sounds
 

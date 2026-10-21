@@ -220,8 +220,8 @@ function cacheSegment(): Segment {
 const BLOCK_IDS = ['cache', 'context', '5h', '7d', 'model', 'speed', 'cost'] as const
 type BlockId = (typeof BLOCK_IDS)[number]
 
-// Blocks shown and their order; set from the `blocks` option at load
-let blocks: BlockId[] = [...BLOCK_IDS]
+// Blocks shown, row by row and in order; set from the `blocks` option at load
+let blocks: BlockId[][] = [[...BLOCK_IDS]]
 let unknownBlocks: string[] = []
 
 function isBlockId(value: string): value is BlockId {
@@ -229,16 +229,25 @@ function isBlockId(value: string): value is BlockId {
 }
 
 // "cache, model, cost" -> those blocks in that order; empty or "default" -> every block
-function parseBlocks(value: unknown): { ids: BlockId[]; unknown: string[] } {
+// "/" starts a new row: "cache, context, 5h, 7d / model, speed, cost" -> two rows. A block is shown once,
+// where it first appears; rows left empty are dropped
+function parseBlocks(value: unknown): { rows: BlockId[][]; unknown: string[] } {
   const text = typeof value === 'string' ? value.trim().toLowerCase() : ''
-  if (text === '' || text === 'default') return { ids: [...BLOCK_IDS], unknown: [] }
-  const ids: BlockId[] = []
+  if (text === '' || text === 'default') return { rows: [[...BLOCK_IDS]], unknown: [] }
+  const seen = new Set<BlockId>()
   const unknown: string[] = []
-  for (const name of text.split(/[\s,;]+/).filter(Boolean)) {
-    if (!isBlockId(name)) unknown.push(name)
-    else if (!ids.includes(name)) ids.push(name)
-  }
-  return { ids, unknown }
+  const rows = text.split(/[/\n]/).map(rowText => {
+    const ids: BlockId[] = []
+    for (const name of rowText.split(/[\s,;]+/).filter(Boolean)) {
+      if (!isBlockId(name)) unknown.push(name)
+      else if (!seen.has(name)) {
+        seen.add(name)
+        ids.push(name)
+      }
+    }
+    return ids
+  })
+  return { rows: rows.filter(ids => ids.length > 0), unknown }
 }
 
 function speedSegment(): Segment {
@@ -274,8 +283,8 @@ function buildBlock(id: BlockId): Segment | undefined {
   }
 }
 
-function segments(): Segment[] {
-  return blocks.map(buildBlock).filter((segment): segment is Segment => segment !== undefined)
+function rowSegments(ids: readonly BlockId[]): Segment[] {
+  return ids.map(buildBlock).filter((segment): segment is Segment => segment !== undefined)
 }
 
 function isTruthy(value: string | undefined): boolean {
@@ -449,26 +458,36 @@ function menuItems($: EngineInterface): MenuItem[] {
 
 function draw($: EngineInterface, e: RenderInput): RenderElement {
   const { Box, Text, Button } = $.ui.resolve(e)
-  const children: RenderElement[] = []
 
-  segments().forEach((segment, i) => {
-    if (i > 0) children.push(Text({ dimColor: true, children: [' | '] }))
-    if (segment.percent === undefined) {
-      children.push(Text({ children: [`${segment.icon} ${segment.text}`] }))
-      if (segment.accent) {
-        const { text, color, bold } = segment.accent
-        children.push(Text({ children: [' '] }), Text({ color, bold, children: [text] }))
+  // One line of blocks as a single truncating Text
+  const line = (list: Segment[]): RenderElement => {
+    const children: RenderElement[] = []
+    list.forEach((segment, i) => {
+      if (i > 0) children.push(Text({ dimColor: true, children: [' | '] }))
+      if (segment.percent === undefined) {
+        children.push(Text({ children: [`${segment.icon} ${segment.text}`] }))
+        if (segment.accent) {
+          const { text, color, bold } = segment.accent
+          children.push(Text({ children: [' '] }), Text({ color, bold, children: [text] }))
+        }
+        return
       }
-      return
-    }
-    // Cache bar shows time left, so it drains while its color heats up
-    const fill = segment.icon === '⏳' && segment.text !== '--:--' ? 100 - segment.percent : segment.percent
-    children.push(
-      Text({ children: [`${segment.icon} `] }),
-      Text({ color: levelColor(segment.percent), children: [bar(fill)] }),
-      Text({ children: [` ${segment.text}`] }),
-    )
-  })
+      // Cache bar shows time left, so it drains while its color heats up
+      const fill = segment.icon === '⏳' && segment.text !== '--:--' ? 100 - segment.percent : segment.percent
+      children.push(
+        Text({ children: [`${segment.icon} `] }),
+        Text({ color: levelColor(segment.percent), children: [bar(fill)] }),
+        Text({ children: [` ${segment.text}`] }),
+      )
+    })
+    return Text({ wrap: 'truncate-end', children })
+  }
+
+  // Rows with nothing to show yet (plan limits before the first answer) take no line; the last row always
+  // stays, as it carries the menu button
+  const lines = blocks.map(rowSegments).filter((list, i, all) => list.length > 0 || i === all.length - 1)
+  const upperRows = lines.slice(0, -1).map((list, i) => Box({ key: `statusbar-row-${i + 1}`, width: '100%', children: [line(list)] }))
+  const children = [line(lines.at(-1) ?? [])]
 
   // Full band width with the segments growing into the free space, so the menu button sits at the right edge,
   // right before the engine's own [-] collapse mark
@@ -479,7 +498,7 @@ function draw($: EngineInterface, e: RenderInput): RenderElement {
     justifyContent: 'space-between',
     columnGap: 1,
     children: [
-      Box({ flexGrow: 1, flexShrink: 1, children: [Text({ wrap: 'truncate-end', children })] }),
+      Box({ flexGrow: 1, flexShrink: 1, children }),
       Box({
         key: 'menu-button',
         flexShrink: 0,
@@ -501,7 +520,8 @@ function draw($: EngineInterface, e: RenderInput): RenderElement {
       }),
     ],
   })
-  if (!menuOpen) return row
+  const statusBar = upperRows.length === 0 ? row : Box({ key: 'statusbar-rows', flexDirection: 'column', width: '100%', children: [...upperRows, row] })
+  if (!menuOpen) return statusBar
 
   // One item per line, right-aligned under the symbol: the band sits above the prompt, so the menu grows upward
   const items = menuItems($).map(item =>
@@ -545,7 +565,7 @@ function draw($: EngineInterface, e: RenderInput): RenderElement {
           }),
         ],
       }),
-      row,
+      statusBar,
     ],
   })
 }
@@ -561,7 +581,7 @@ export const register: Register = (on, options) => {
   const locale = configured.toLowerCase() === 'system' ? '' : configured
   if (locale !== '') state.dates = intlFormatter(locale)
   sounds = readSoundSettings(options)
-  ;({ ids: blocks, unknown: unknownBlocks } = parseBlocks(options.blocks))
+  ;({ rows: blocks, unknown: unknownBlocks } = parseBlocks(options.blocks))
 
   on('session.start', async ($, e, next) => {
     // An explicit locale wins; otherwise the OS regional settings, resolved once per session

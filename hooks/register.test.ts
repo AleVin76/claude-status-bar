@@ -513,3 +513,41 @@ test('the permission notice after a PermissionRequest stays silent', async ($, o
   await flush($)
   expect(played.map(soundFile)).toHaveLength(1)
 })
+
+test('"/" splits the blocks into two rows, the menu on the last one', { options: { blocks: 'cache, context / model, speed, cost' } }, async ($, on) => {
+  world(on)
+  mock.store(on)
+  await startSession($, on)
+  await $.session.measure(measure)
+
+  const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
+  const keys = (await ui.findAll({ type: 'Box' })).map(b => b.key)
+  expect(keys.indexOf('statusbar-row-1')).toBeLessThan(keys.indexOf('statusbar-row'))
+  expect(keys.at(-1)).toBe('menu-button')
+
+  const first = (await ui.findAll({ type: 'Text' })).find(t => t.text.startsWith('⏳'))?.text ?? ''
+  expect(first).toMatch(/^⏳ .* \| 🧠 .*%$/)
+  const last = (await ui.findAll({ type: 'Text' })).find(t => t.text.startsWith('🤖'))?.text ?? ''
+  expect(last).toMatch(/^🤖 Opus 5\.5 \| ⚡ .* tok\/s \| 💲 1\.23$/)
+})
+
+test('a row with nothing to show yet takes no line', { options: { blocks: '5h, 7d / model' } }, async ($, on) => {
+  world(on)
+  mock.store(on)
+  await startSession($, on)
+
+  const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
+  expect(await ui.find({ type: 'Box', key: 'statusbar-row-1' })).toBeUndefined()
+  expect(await ui.find({ type: 'Box', key: 'statusbar-row' })).toBeDefined()
+})
+
+for (const surface of ['terminal', 'desktop'] as const) {
+  test(`the menu opens above both rows on ${surface}`, { options: { blocks: 'cache / cost' } }, async ($, on) => {
+    world(on)
+    await $.session.measure(measure)
+    const ui = await $.ui.mount({ plugin: 'statusbar', surface, component: 'AbovePrompt', props: bandProps })
+    await ui.press({ key: 'menu' })
+    const keys = (await ui.findAll({ type: 'Box' })).map(b => b.key)
+    expect(keys.indexOf('menu-items')).toBeLessThan(keys.indexOf('statusbar-row-1'))
+  })
+}

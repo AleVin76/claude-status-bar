@@ -36,7 +36,7 @@ Menu actions:
 
 Each sound can be turned on or off on its own, and each can use your own WAV file: see [Configuration → Sounds](docs/configuration.md#sounds). Sounds play on the computer running Claude Code (terminal, or local sessions of the Desktop app); cloud sessions are silent.
 
-Which blocks appear, and in which order, is set by the `blocks` option: see [Configuration → Blocks](docs/configuration.md#blocks).
+Which blocks appear, in which order and on which of up to two rows, is set by the `blocks` option: see [Configuration → Blocks](docs/configuration.md#blocks).
 
 Bars turn **green** below 50%, **yellow** from 50% and **red** from 80%. The ⏳ bar drains as the cache ages and changes color on the elapsed share. Colors follow your Claude Code theme (`success`, `warning`, `error`). Reset dates and times follow the operating system's regional settings.
 
