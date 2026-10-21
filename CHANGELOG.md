@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.10.0 — 2026-10-21
+
+- Blocks editor in the [≡] menu (`⚙ Blocchi e righe…`): show, hide, order and place every block on row 1 or 2 with buttons and a preview, without going through `/config`.
+
 ## 1.9.0 — 2026-10-21
 
 - The bar can use two rows: in the `blocks` option a `/` starts a new row (`cache, context, 5h, 7d / model, speed, cost`). The [≡] menu sits on the last row and opens above all rows.

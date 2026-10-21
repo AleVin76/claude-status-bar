@@ -68,7 +68,20 @@ Examples:
 | `5h, 7d, cache` | `🕒 … \| 📅 … \| ⏳ …` |
 | `cache, context, 5h, 7d / model, speed, cost` | two rows: `⏳ … \| 🧠 … \| 🕒 … \| 📅 …` above `🤖 … \| ⚡ … \| 💲 …` |
 
-Set it from `/config` (**Blocks and order**) or in `settings.json`:
+The easiest way is the editor: **[≡] → ⚙ Blocchi e righe…** opens a panel listing every block under *Riga 1*, *Riga 2* and *Nascosti*:
+
+| Button | Effect |
+|---|---|
+| `↑` `↓` | Move the block within its row |
+| `→ Riga 2` / `→ Riga 1` | Move the block to the end of the other row |
+| `Nascondi` / `Mostra` | Hide the block, or show it again at the end of row 1 |
+| `Salva` | Apply and store the layout (as the `blocks` option) |
+| `Predefiniti` | Every block on one row, default order |
+| `Annulla` (or Esc) | Close without changes |
+
+Move between buttons with Tab and press with Enter, or click them. A preview line shows the result before saving.
+
+The same layout can be typed in `/config` (**Blocks and order**) or in `settings.json`:
 
 ```json
 "pluginConfigs": {

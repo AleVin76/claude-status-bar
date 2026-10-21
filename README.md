@@ -23,6 +23,7 @@ Menu actions:
 |---|---|
 | `⇄ Cache 1h → 5m` | Switches Claude Code's prompt cache TTL between `5m` and `1h`. Shown as `🔒 Cache 5m (…)` when an environment variable fixes it |
 
+| `⚙ Blocchi e righe…` | Opens the blocks editor: show, hide, order and place each block on row 1 or 2, with a preview |
 | `🔔 Suono completamento: on` | Turns the completion sound on or off |
 | `🔔 Suono domanda: on` | Turns the question sound on or off |
 | `▶ Prova suoni` | Plays both sounds, to check them |

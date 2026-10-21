@@ -403,6 +403,141 @@ type MenuItem = {
   onPress?: () => Promise<void> | void
 }
 
+// ---- Blocks editor: a pane opened from the menu to show, hide, order and place the blocks ----
+
+const EDITOR_PANE = 'statusbar-blocks'
+
+const BLOCK_LABELS: Record<BlockId, string> = {
+  cache: '⏳ Cache',
+  context: '🧠 Contesto',
+  '5h': '🕒 Limite 5 ore',
+  '7d': '📅 Limite settimanale',
+  model: '🤖 Modello ed effort',
+  speed: '⚡ Velocità',
+  cost: '💲 Costo',
+}
+
+// Row 0 means hidden
+type DraftBlock = { id: BlockId; row: 0 | 1 | 2 }
+
+// The editor's working copy; the bar changes only on "Salva"
+let draft: DraftBlock[] = []
+
+function draftFromBlocks(): DraftBlock[] {
+  const shown = blocks.flatMap((ids, i) => ids.map(id => ({ id, row: (i === 0 ? 1 : 2) as 1 | 2 })))
+  const hidden = BLOCK_IDS.filter(id => !shown.some(b => b.id === id)).map(id => ({ id, row: 0 as const }))
+  return [...shown, ...hidden]
+}
+
+function draftRows(): BlockId[][] {
+  return [1, 2].map(row => draft.filter(b => b.row === row).map(b => b.id)).filter(ids => ids.length > 0)
+}
+
+// Back to the option's text form; the full default set on one row is written as "default"
+function serializeBlocks(rows: BlockId[][]): string {
+  const text = rows.map(ids => ids.join(', ')).join(' / ')
+  return text === BLOCK_IDS.join(', ') ? 'default' : text
+}
+
+// Swaps a block with its neighbour in the same row (or among the hidden ones)
+function moveBlock(id: BlockId, step: -1 | 1): void {
+  const index = draft.findIndex(b => b.id === id)
+  const block = draft[index]
+  if (!block) return
+  for (let j = index + step; j >= 0 && j < draft.length; j += step) {
+    const other = draft[j]
+    if (other && other.row === block.row) {
+      draft[index] = other
+      draft[j] = block
+      return
+    }
+  }
+}
+
+// Moves a block to the end of another row, or hides it
+function placeBlock(id: BlockId, row: 0 | 1 | 2): void {
+  const block = draft.find(b => b.id === id)
+  if (!block || block.row === row) return
+  draft = [...draft.filter(b => b.id !== id), { id, row }]
+}
+
+async function openBlocksEditor($: EngineInterface): Promise<void> {
+  draft = draftFromBlocks()
+  await $.ui.open({ id: EDITOR_PANE, title: 'Blocchi della barra', focus: true, closeOnEscape: true })
+}
+
+async function saveBlocks($: EngineInterface): Promise<void> {
+  const rows = draftRows()
+  // Close and redraw first: saving the option reloads the mod, which ends this module's work
+  await $.ui.close({ id: EDITOR_PANE })
+  blocks = rows.length > 0 ? rows : [[]]
+  $.ui.invalidate('ui.render')
+  const result = await $.config.set({ key: `${$.plugin.name}.blocks`, value: serializeBlocks(rows) })
+  if (result.deny !== undefined) $.ui.toast(`Blocchi non salvati: ${result.deny}`)
+}
+
+function drawBlocksEditor($: EngineInterface, e: RenderInput): RenderElement {
+  const { Box, Text, Button } = $.ui.resolve(e)
+  // A reload while the pane is open starts with no working copy
+  if (draft.length === 0) draft = draftFromBlocks()
+  const redraw = () => $.ui.invalidate('ui.render')
+  const act = (fn: () => void) => () => {
+    fn()
+    redraw()
+  }
+
+  const blockLine = (block: DraftBlock): RenderElement =>
+    Box({
+      key: `block-${block.id}`,
+      flexDirection: 'row',
+      columnGap: 1,
+      children: [
+        Button({ key: `up-${block.id}`, label: '↑', onPress: act(() => moveBlock(block.id, -1)) }),
+        Button({ key: `down-${block.id}`, label: '↓', onPress: act(() => moveBlock(block.id, 1)) }),
+        block.row === 0
+          ? Button({ key: `show-${block.id}`, label: 'Mostra', onPress: act(() => placeBlock(block.id, 1)) })
+          : Button({ key: `hide-${block.id}`, label: 'Nascondi', onPress: act(() => placeBlock(block.id, 0)) }),
+        ...(block.row === 0
+          ? []
+          : [Button({ key: `row-${block.id}`, label: `→ Riga ${block.row === 1 ? 2 : 1}`, onPress: act(() => placeBlock(block.id, block.row === 1 ? 2 : 1)) })]),
+        Text({ dimColor: block.row === 0, children: [BLOCK_LABELS[block.id]] }),
+      ],
+    })
+
+  const section = (title: string, row: 0 | 1 | 2): RenderElement[] => {
+    const list = draft.filter(b => b.row === row)
+    return [
+      Text({ bold: true, color: MENU_COLOR, children: [title] }),
+      ...(list.length > 0 ? list.map(blockLine) : [Text({ dimColor: true, children: ['  (nessun blocco)'] })]),
+    ]
+  }
+
+  const preview = draftRows()
+    .map(ids => ids.map(id => BLOCK_LABELS[id].split(' ')[0]).join(' | '))
+    .join('   ⏎   ')
+
+  return Box({
+    flexDirection: 'column',
+    rowGap: 0,
+    children: [
+      ...section('Riga 1', 1),
+      ...section('Riga 2', 2),
+      ...section('Nascosti', 0),
+      Text({ children: [' '] }),
+      Text({ dimColor: true, children: [`Anteprima: ${preview || '(barra vuota)'}`] }),
+      Box({
+        flexDirection: 'row',
+        columnGap: 2,
+        children: [
+          Button({ key: 'blocks-save', label: 'Salva', onPress: () => void saveBlocks($) }),
+          Button({ key: 'blocks-default', label: 'Predefiniti', onPress: act(() => (draft = BLOCK_IDS.map(id => ({ id, row: 1 as const })))) }),
+          Button({ key: 'blocks-cancel', label: 'Annulla', onPress: () => void $.ui.close({ id: EDITOR_PANE }) }),
+        ],
+      }),
+    ],
+  })
+}
+
 // Notification types that mean Claude Code is waiting for an answer
 const QUESTION_NOTIFICATIONS = new Set([
   'permission_prompt',
@@ -429,6 +564,7 @@ function menuItems($: EngineInterface): MenuItem[] {
     isLocked
       ? { key: 'ttl', label: `🔒 Cache ${state.ttl} (${lockedBy})` }
       : { key: 'ttl', label: `⇄ Cache ${state.ttl} → ${other}`, onPress: () => switchTtl($) },
+    { key: 'blocks-editor', label: '⚙ Blocchi e righe…', onPress: () => openBlocksEditor($) },
     {
       key: 'sound-complete',
       label: `${sounds.onComplete ? '🔔' : '🔕'} Suono completamento: ${onOff(sounds.onComplete)}`,
@@ -681,6 +817,11 @@ export const register: Register = (on, options) => {
   on('session.end', async ($, e, next) => {
     if (e.reason === 'clear') state.lastResponseAt = undefined
     return next(e)
+  })
+
+  on('ui.render', { component: 'Pane' }, async ($, e, next) => {
+    if (e.requestId !== EDITOR_PANE) return next(e)
+    return drawBlocksEditor($, e)
   })
 
   // Drawn in the band above the prompt: unlike $.ui.status it takes colors and carries no plugin label

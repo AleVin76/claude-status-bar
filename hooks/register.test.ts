@@ -551,3 +551,70 @@ for (const surface of ['terminal', 'desktop'] as const) {
     expect(keys.indexOf('menu-items')).toBeLessThan(keys.indexOf('statusbar-row-1'))
   })
 }
+
+const paneProps = {
+  title: 'Blocchi della barra',
+  isFocused: true,
+  bodyColumns: 100,
+  placement: 'inline' as const,
+  scroll: { offset: 0, bodyRows: 30 },
+  view: {},
+}
+
+function recordConfig(on: On): { key: string; value: unknown }[] {
+  const set: { key: string; value: unknown }[] = []
+  on('config.set', async (_$, e) => {
+    set.push({ key: e.key, value: e.value })
+    return { value: e.value }
+  })
+  return set
+}
+
+test('the menu opens the blocks editor pane', async ($, on) => {
+  world(on)
+  const opened: string[] = []
+  on('ui.open', async (_$, e) => {
+    opened.push(e.id)
+    return { value: { isPlaced: true } }
+  })
+  await $.session.measure(measure)
+  const band = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
+  await band.press({ key: 'menu' })
+  await band.press({ key: 'blocks-editor' })
+  await flush($)
+  expect(opened).toEqual(['statusbar-blocks'])
+})
+
+for (const surface of ['terminal', 'desktop'] as const) {
+  test(`the editor hides, moves and places blocks, then saves the option on ${surface}`, async ($, on) => {
+    world(on)
+    const set = recordConfig(on)
+    on('ui.close', async () => ({ value: undefined }))
+    const pane = await $.ui.mount({ plugin: 'statusbar', surface, component: 'Pane', props: paneProps, requestId: 'statusbar-blocks' })
+
+    // Every block starts on row 1, in the default order
+    expect(await pane.find({ type: 'Button', key: 'hide-speed' })).toBeDefined()
+    await pane.press({ key: 'hide-speed' })
+    await pane.press({ key: 'row-model' })
+    await pane.press({ key: 'row-cost' })
+    await pane.press({ key: 'up-cost' })
+    await pane.press({ key: 'down-cache' })
+    expect(await pane.find({ type: 'Button', key: 'show-speed' })).toBeDefined()
+
+    await pane.press({ key: 'blocks-save' })
+    await flush($)
+    expect(set).toEqual([{ key: 'statusbar.blocks', value: 'context, cache, 5h, 7d / cost, model' }])
+  })
+}
+
+test('"Predefiniti" saves the default layout as "default"', { options: { blocks: 'cost / model' } }, async ($, on) => {
+  world(on)
+  const set = recordConfig(on)
+  on('ui.close', async () => ({ value: undefined }))
+  const pane = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'Pane', props: paneProps, requestId: 'statusbar-blocks' })
+
+  await pane.press({ key: 'blocks-default' })
+  await pane.press({ key: 'blocks-save' })
+  await flush($)
+  expect(set).toEqual([{ key: 'statusbar.blocks', value: 'default' }])
+})
