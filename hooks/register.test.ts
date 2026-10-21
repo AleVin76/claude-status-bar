@@ -618,3 +618,41 @@ test('"Predefiniti" saves the default layout as "default"', { options: { blocks:
   await flush($)
   expect(set).toEqual([{ key: 'statusbar.blocks', value: 'default' }])
 })
+
+test('values take the color of their bar', async ($, on) => {
+  world(on)
+  await $.session.measure(measure)
+  const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
+  const texts = await ui.findAll({ type: 'Text' })
+  const colorOf = (match: RegExp) => texts.find(t => match.test(t.text) && !/[█░]/.test(t.text) && !t.text.includes('|'))?.props.color
+  expect(colorOf(/^ 85\.06%$/)).toBe('error')
+  expect(colorOf(/^  5% \(/)).toBe('success')
+  expect(colorOf(/^ 60% \(/)).toBe('warning')
+})
+
+test('":nobar" draws a block without its bar, value still colored', { options: { blocks: 'context:nobar, 7d, cost:nobar' } }, async ($, on) => {
+  world(on)
+  await $.session.measure(measure)
+  const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
+  const row = (await ui.findAll({ type: 'Text' }))[0]?.text ?? ''
+  expect(row).toMatch(/^🧠  85\.06% \| 📅 [█░]{10}  60% \(.*\) \| 💲 1\.23$/)
+  const value = (await ui.findAll({ type: 'Text' })).find(t => t.text === ' 85.06%')
+  expect(value?.props.color).toBe('error')
+})
+
+test('the editor turns a bar off and saves it as ":nobar"', { options: { blocks: 'context, 5h / model' } }, async ($, on) => {
+  world(on)
+  const set = recordConfig(on)
+  on('ui.close', async () => ({ value: undefined }))
+  const pane = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'Pane', props: paneProps, requestId: 'statusbar-blocks' })
+
+  expect((await pane.find({ type: 'Button', key: 'bar-context' }))?.props.label).toBe('Barra: sì')
+  // Blocks without a bar get no bar button
+  expect(await pane.find({ type: 'Button', key: 'bar-model' })).toBeUndefined()
+  await pane.press({ key: 'bar-context' })
+  expect((await pane.find({ type: 'Button', key: 'bar-context' }))?.props.label).toBe('Barra: no')
+
+  await pane.press({ key: 'blocks-save' })
+  await flush($)
+  expect(set).toEqual([{ key: 'statusbar.blocks', value: 'context:nobar, 5h / model' }])
+})

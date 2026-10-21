@@ -10,7 +10,7 @@ The mod is a single hooks module, [`hooks/register.ts`](../hooks/register.ts), t
 | 50–79% | yellow (`warning`) |
 | ≥ 80% | red (`error`) |
 
-The thresholds are `WARNING_FROM` and `ERROR_FROM` at the top of `hooks/register.ts`. The ⏳ bar shows the time left, while its color is judged on the elapsed share: green right after a request, red near expiry.
+The value next to a bar (percentage, countdown, reset time) is drawn in the same color as the bar, also when the bar is hidden with `:nobar`. The thresholds are `WARNING_FROM` and `ERROR_FROM` at the top of `hooks/register.ts`. The ⏳ bar shows the time left, while its color is judged on the elapsed share: green right after a request, red near expiry.
 
 ## Data sources
 

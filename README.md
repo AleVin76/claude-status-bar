@@ -39,7 +39,7 @@ Each sound can be turned on or off on its own, and each can use your own WAV fil
 
 Which blocks appear, in which order and on which of up to two rows, is set by the `blocks` option: see [Configuration → Blocks](docs/configuration.md#blocks).
 
-Bars turn **green** below 50%, **yellow** from 50% and **red** from 80%. The ⏳ bar drains as the cache ages and changes color on the elapsed share. Colors follow your Claude Code theme (`success`, `warning`, `error`). Reset dates and times follow the operating system's regional settings.
+Bars turn **green** below 50%, **yellow** from 50% and **red** from 80%, and the value next to each bar takes the same color. Each bar can be hidden on its own, leaving the colored value. The ⏳ bar drains as the cache ages and changes color on the elapsed share. Colors follow your Claude Code theme (`success`, `warning`, `error`). Reset dates and times follow the operating system's regional settings.
 
 ## Requirements
 

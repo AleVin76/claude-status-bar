@@ -25,6 +25,8 @@ type Segment = {
   text: string
   // Trailing word drawn in its own color (the effort level)
   accent?: { text: string; color?: Color; bold?: boolean }
+  // False: only the value is drawn, still colored by its level
+  showBar?: boolean
 }
 
 // Effort from weakest to strongest, on theme keys so light and dark themes both read well
@@ -224,6 +226,11 @@ type BlockId = (typeof BLOCK_IDS)[number]
 let blocks: BlockId[][] = [[...BLOCK_IDS]]
 let unknownBlocks: string[] = []
 
+// Blocks with a progress bar; a `:nobar` suffix in the option draws them without it ("context:nobar")
+const BAR_BLOCKS: readonly BlockId[] = ['cache', 'context', '5h', '7d']
+const NO_BAR = ':nobar'
+let hiddenBars = new Set<BlockId>()
+
 function isBlockId(value: string): value is BlockId {
   return (BLOCK_IDS as readonly string[]).includes(value)
 }
@@ -231,23 +238,26 @@ function isBlockId(value: string): value is BlockId {
 // "cache, model, cost" -> those blocks in that order; empty or "default" -> every block
 // "/" starts a new row: "cache, context, 5h, 7d / model, speed, cost" -> two rows. A block is shown once,
 // where it first appears; rows left empty are dropped
-function parseBlocks(value: unknown): { rows: BlockId[][]; unknown: string[] } {
+function parseBlocks(value: unknown): { rows: BlockId[][]; unknown: string[]; noBar: Set<BlockId> } {
   const text = typeof value === 'string' ? value.trim().toLowerCase() : ''
-  if (text === '' || text === 'default') return { rows: [[...BLOCK_IDS]], unknown: [] }
+  if (text === '' || text === 'default') return { rows: [[...BLOCK_IDS]], unknown: [], noBar: new Set() }
   const seen = new Set<BlockId>()
+  const noBar = new Set<BlockId>()
   const unknown: string[] = []
   const rows = text.split(/[/\n]/).map(rowText => {
     const ids: BlockId[] = []
-    for (const name of rowText.split(/[\s,;]+/).filter(Boolean)) {
-      if (!isBlockId(name)) unknown.push(name)
+    for (const token of rowText.split(/[\s,;]+/).filter(Boolean)) {
+      const name = token.endsWith(NO_BAR) ? token.slice(0, -NO_BAR.length) : token
+      if (!isBlockId(name)) unknown.push(token)
       else if (!seen.has(name)) {
         seen.add(name)
         ids.push(name)
+        if (name !== token && BAR_BLOCKS.includes(name)) noBar.add(name)
       }
     }
     return ids
   })
-  return { rows: rows.filter(ids => ids.length > 0), unknown }
+  return { rows: rows.filter(ids => ids.length > 0), unknown, noBar }
 }
 
 function speedSegment(): Segment {
@@ -284,7 +294,10 @@ function buildBlock(id: BlockId): Segment | undefined {
 }
 
 function rowSegments(ids: readonly BlockId[]): Segment[] {
-  return ids.map(buildBlock).filter((segment): segment is Segment => segment !== undefined)
+  return ids.flatMap(id => {
+    const segment = buildBlock(id)
+    return segment ? [{ ...segment, showBar: !hiddenBars.has(id) }] : []
+  })
 }
 
 function isTruthy(value: string | undefined): boolean {
@@ -417,15 +430,15 @@ const BLOCK_LABELS: Record<BlockId, string> = {
   cost: '💲 Costo',
 }
 
-// Row 0 means hidden
-type DraftBlock = { id: BlockId; row: 0 | 1 | 2 }
+// Row 0 means hidden; `bar` is meaningful for the blocks that have one
+type DraftBlock = { id: BlockId; row: 0 | 1 | 2; bar: boolean }
 
 // The editor's working copy; the bar changes only on "Salva"
 let draft: DraftBlock[] = []
 
 function draftFromBlocks(): DraftBlock[] {
-  const shown = blocks.flatMap((ids, i) => ids.map(id => ({ id, row: (i === 0 ? 1 : 2) as 1 | 2 })))
-  const hidden = BLOCK_IDS.filter(id => !shown.some(b => b.id === id)).map(id => ({ id, row: 0 as const }))
+  const shown = blocks.flatMap((ids, i) => ids.map(id => ({ id, row: (i === 0 ? 1 : 2) as 1 | 2, bar: !hiddenBars.has(id) })))
+  const hidden = BLOCK_IDS.filter(id => !shown.some(b => b.id === id)).map(id => ({ id, row: 0 as const, bar: !hiddenBars.has(id) }))
   return [...shown, ...hidden]
 }
 
@@ -433,9 +446,13 @@ function draftRows(): BlockId[][] {
   return [1, 2].map(row => draft.filter(b => b.row === row).map(b => b.id)).filter(ids => ids.length > 0)
 }
 
-// Back to the option's text form; the full default set on one row is written as "default"
-function serializeBlocks(rows: BlockId[][]): string {
-  const text = rows.map(ids => ids.join(', ')).join(' / ')
+function draftNoBar(): Set<BlockId> {
+  return new Set(draft.filter(b => !b.bar && BAR_BLOCKS.includes(b.id)).map(b => b.id))
+}
+
+// Back to the option's text form; the full default set on one row, every bar shown, is written as "default"
+function serializeBlocks(rows: BlockId[][], noBar: ReadonlySet<BlockId>): string {
+  const text = rows.map(ids => ids.map(id => (noBar.has(id) ? `${id}${NO_BAR}` : id)).join(', ')).join(' / ')
   return text === BLOCK_IDS.join(', ') ? 'default' : text
 }
 
@@ -458,7 +475,11 @@ function moveBlock(id: BlockId, step: -1 | 1): void {
 function placeBlock(id: BlockId, row: 0 | 1 | 2): void {
   const block = draft.find(b => b.id === id)
   if (!block || block.row === row) return
-  draft = [...draft.filter(b => b.id !== id), { id, row }]
+  draft = [...draft.filter(b => b.id !== id), { ...block, row }]
+}
+
+function toggleBar(id: BlockId): void {
+  draft = draft.map(b => (b.id === id ? { ...b, bar: !b.bar } : b))
 }
 
 async function openBlocksEditor($: EngineInterface): Promise<void> {
@@ -468,11 +489,13 @@ async function openBlocksEditor($: EngineInterface): Promise<void> {
 
 async function saveBlocks($: EngineInterface): Promise<void> {
   const rows = draftRows()
+  const noBar = draftNoBar()
   // Close and redraw first: saving the option reloads the mod, which ends this module's work
   await $.ui.close({ id: EDITOR_PANE })
   blocks = rows.length > 0 ? rows : [[]]
+  hiddenBars = noBar
   $.ui.invalidate('ui.render')
-  const result = await $.config.set({ key: `${$.plugin.name}.blocks`, value: serializeBlocks(rows) })
+  const result = await $.config.set({ key: `${$.plugin.name}.blocks`, value: serializeBlocks(rows, noBar) })
   if (result.deny !== undefined) $.ui.toast(`Blocchi non salvati: ${result.deny}`)
 }
 
@@ -500,6 +523,9 @@ function drawBlocksEditor($: EngineInterface, e: RenderInput): RenderElement {
         ...(block.row === 0
           ? []
           : [Button({ key: `row-${block.id}`, label: `→ Riga ${block.row === 1 ? 2 : 1}`, onPress: act(() => placeBlock(block.id, block.row === 1 ? 2 : 1)) })]),
+        ...(BAR_BLOCKS.includes(block.id)
+          ? [Button({ key: `bar-${block.id}`, label: block.bar ? 'Barra: sì' : 'Barra: no', onPress: act(() => toggleBar(block.id)) })]
+          : []),
         Text({ dimColor: block.row === 0, children: [BLOCK_LABELS[block.id]] }),
       ],
     })
@@ -530,7 +556,7 @@ function drawBlocksEditor($: EngineInterface, e: RenderInput): RenderElement {
         columnGap: 2,
         children: [
           Button({ key: 'blocks-save', label: 'Salva', onPress: () => void saveBlocks($) }),
-          Button({ key: 'blocks-default', label: 'Predefiniti', onPress: act(() => (draft = BLOCK_IDS.map(id => ({ id, row: 1 as const })))) }),
+          Button({ key: 'blocks-default', label: 'Predefiniti', onPress: act(() => (draft = BLOCK_IDS.map(id => ({ id, row: 1 as const, bar: true })))) }),
           Button({ key: 'blocks-cancel', label: 'Annulla', onPress: () => void $.ui.close({ id: EDITOR_PANE }) }),
         ],
       }),
@@ -610,10 +636,12 @@ function draw($: EngineInterface, e: RenderInput): RenderElement {
       }
       // Cache bar shows time left, so it drains while its color heats up
       const fill = segment.icon === '⏳' && segment.text !== '--:--' ? 100 - segment.percent : segment.percent
+      // The value takes the same color as its bar, whether or not the bar is drawn
+      const color = levelColor(segment.percent)
       children.push(
         Text({ children: [`${segment.icon} `] }),
-        Text({ color: levelColor(segment.percent), children: [bar(fill)] }),
-        Text({ children: [` ${segment.text}`] }),
+        ...(segment.showBar === false ? [] : [Text({ color, children: [bar(fill)] }), Text({ children: [' '] })]),
+        Text({ color, children: [segment.text] }),
       )
     })
     return Text({ wrap: 'truncate-end', children })
@@ -717,7 +745,7 @@ export const register: Register = (on, options) => {
   const locale = configured.toLowerCase() === 'system' ? '' : configured
   if (locale !== '') state.dates = intlFormatter(locale)
   sounds = readSoundSettings(options)
-  ;({ rows: blocks, unknown: unknownBlocks } = parseBlocks(options.blocks))
+  ;({ rows: blocks, unknown: unknownBlocks, noBar: hiddenBars } = parseBlocks(options.blocks))
 
   on('session.start', async ($, e, next) => {
     // An explicit locale wins; otherwise the OS regional settings, resolved once per session

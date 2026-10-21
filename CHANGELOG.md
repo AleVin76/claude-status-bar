@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.11.0 — 2026-10-21
+
+- The value next to each bar (⏳ 🧠 🕒 📅) is drawn in the bar's color: green, yellow or red by level.
+- Each bar can be hidden on its own, keeping the colored value: `Barra: sì/no` in the blocks editor, or `:nobar` in the `blocks` option (`context:nobar`).
+
 ## 1.10.0 — 2026-10-21
 
 - Blocks editor in the [≡] menu (`⚙ Blocchi e righe…`): show, hide, order and place every block on row 1 or 2 with buttons and a preview, without going through `/config`.

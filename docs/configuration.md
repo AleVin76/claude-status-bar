@@ -75,6 +75,7 @@ The easiest way is the editor: **[≡] → ⚙ Blocchi e righe…** opens a pane
 | `↑` `↓` | Move the block within its row |
 | `→ Riga 2` / `→ Riga 1` | Move the block to the end of the other row |
 | `Nascondi` / `Mostra` | Hide the block, or show it again at the end of row 1 |
+| `Barra: sì` / `Barra: no` | Show or hide the progress bar of ⏳ 🧠 🕒 📅; the value keeps its color |
 | `Salva` | Apply and store the layout (as the `blocks` option) |
 | `Predefiniti` | Every block on one row, default order |
 | `Annulla` (or Esc) | Close without changes |
@@ -88,6 +89,8 @@ The same layout can be typed in `/config` (**Blocks and order**) or in `settings
   "statusbar@claude-status-bar": { "options": { "blocks": "model, speed, context, 5h, 7d" } }
 }
 ```
+
+Add `:nobar` to a block with a bar (`cache`, `context`, `5h`, `7d`) to draw only its value, still colored by level: `cache, context:nobar, 5h:nobar, 7d / model, speed, cost`.
 
 Unknown ids are ignored and named in a notice at session start. A block listed twice is shown where it first appears. The [≡] menu is always shown, at the right end of the last row, and opens above all rows. A row with nothing to show yet (plan limits before the first answer) takes no line.
 

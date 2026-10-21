@@ -1,6 +1,6 @@
 {
   "name": "statusbar",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "description": "Status line: prompt cache countdown, context, plan limits, model/effort, API-equivalent cost",
   "author": {
     "name": "Alessandro Vinciguerra"
@@ -12,7 +12,7 @@
     "blocks": {
       "type": "string",
       "title": "Blocks and order",
-      "description": "Blocks to show, in order, separated by commas; \"/\" starts a new row. Ids: cache, context, 5h, 7d, model, speed, cost. \"default\" shows them all on one row",
+      "description": "Blocks to show, in order, separated by commas; \"/\" starts a new row; \":nobar\" hides a block's bar (context:nobar). Ids: cache, context, 5h, 7d, model, speed, cost. \"default\" shows them all on one row",
       "default": "default"
     },
     "locale": {
