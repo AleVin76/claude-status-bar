@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.0 — 2026-10-21
+
+- ⚡ new block: generation speed of the last answer, in output tokens per second.
+- `blocks` option: choose which blocks are shown and in which order (`cache, context, 5h, 7d, model, speed, cost`).
+- Permission sound also where Claude Code's built-in guard keeps mods off permission requests (managed machines, Team and Enterprise plans): it plays from the notice raised 6 seconds into a waiting prompt.
+- No more missing-executable warning in the debug log on Windows and Linux (the macOS locale lookup runs only on macOS).
+
 ## 1.7.0 — 2026-10-18
 
 - Sounds: one when Claude finishes an answer of at least 15 seconds, another when it asks something (multiple-choice questions, permission requests, MCP input requests).

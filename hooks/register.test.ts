@@ -16,8 +16,11 @@ const SETTINGS_PATH = '/home/u/.claude/settings.json'
 type World = { env?: Record<string, string>; files?: Record<string, string>; now?: number }
 
 // Answers the nouns the mod reads beneath it: clock, env, settings and an in-memory file system
+// The mocked clock of the current test, for tests that move time
+let clock: ReturnType<typeof mock.clock>
+
 function world(on: On, { env = {}, files = {}, now }: World = {}): Record<string, string> {
-  mock.clock(on, now === undefined ? undefined : { now })
+  clock = mock.clock(on, now === undefined ? undefined : { now })
   mock.env(on, { HOME: '/home/u', ...env })
   on('settings.read', async () => {
     try {
@@ -430,4 +433,83 @@ test('the menu toggles a sound through /config', async ($, on) => {
 
   await ui.press({ key: 'menu' })
   expect((await ui.find({ type: 'Button', key: 'sound-complete' }))?.props.label).toBe('🔕 Suono completamento: off')
+})
+
+const rowText = async (ui: { findAll: (q: { type: string }) => Promise<{ text: string }[]> }): Promise<string> =>
+  (await ui.findAll({ type: 'Text' }))[0]?.text ?? ''
+
+test('the blocks option picks and orders the blocks', { options: { blocks: 'cost, model ,context' } }, async ($, on) => {
+  world(on)
+  mock.store(on)
+  await startSession($, on)
+  await $.session.measure(measure)
+
+  const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
+  const text = await rowText(ui)
+  expect(text).toMatch(/^💲 1\.23 \| 🤖 Opus 5\.5 \| 🧠 /)
+  expect(text).not.toContain('⏳')
+  expect(text).not.toContain('⚡')
+})
+
+test('unknown blocks are ignored with a notice', { options: { blocks: 'cache, banana, cost' } }, async ($, on) => {
+  world(on)
+  mock.store(on)
+  const toasts: string[] = []
+  on('ui.toast', async (_$, e) => {
+    toasts.push(e.text)
+    return { value: undefined }
+  })
+  await startSession($, on)
+  await $.session.measure(measure)
+
+  const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
+  expect(await rowText(ui)).toMatch(/^⏳ .* \| 💲 1\.23$/)
+  expect(toasts.join()).toContain('banana')
+})
+
+test('speed shows output tokens per second of the last response', { options: { blocks: 'speed' } }, async ($, on) => {
+  world(on)
+  mock.store(on)
+  on('session.model', async () => ({ value: 'Opus 5.5' }))
+  on('session.id', async () => ({ value: 's1' }))
+  // Beneath the mod: 300 output tokens streamed over 4 seconds
+  on('turn.step', async function* (_$, e) {
+    yield { kind: 'text' as const, index: 0, text: 'Hello' }
+    await clock.advance(4000)
+    return {
+      turnId: e.turnId, index: e.index, answer: 'Hello', toolUses: [], stopReason: 'end_turn' as const,
+      usage: { model: 'opus', input_tokens: 10, output_tokens: 300, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+    }
+  })
+  const ui = await $.ui.mount({ plugin: 'statusbar', surface: 'terminal', component: 'AbovePrompt', props: bandProps })
+  expect(await rowText(ui)).toBe('⚡ \u2007\u2007- tok/s')
+
+  for await (const _chunk of $.turn.step({ turnId: 't1', index: 0, model: 'opus', effort: 'high', messageCount: 1 })) {
+    // drain
+  }
+  expect(await rowText(ui)).toBe('⚡ \u200775 tok/s')
+})
+
+test('a permission notice plays the question sound when PermissionRequest did not', async ($, on) => {
+  world(on, { env: { OS: 'Windows_NT' } })
+  const played = recordPlayer(on)
+  on('classic.Notification', async () => ({}))
+
+  await $.classic.Notification({ message: 'Claude needs your permission to use Bash', notification_type: 'permission_prompt' })
+  await $.classic.Notification({ message: 'Claude is waiting for your input', notification_type: 'idle_prompt' })
+  await flush($)
+  expect(played.map(soundFile)).toHaveLength(1)
+})
+
+test('the permission notice after a PermissionRequest stays silent', async ($, on) => {
+  world(on, { env: { OS: 'Windows_NT' } })
+  const played = recordPlayer(on)
+  on('classic.PermissionRequest', async () => ({}))
+  on('classic.Notification', async () => ({}))
+
+  await $.classic.PermissionRequest({ tool_name: 'Bash', tool_input: {} })
+  await clock.advance(6000)
+  await $.classic.Notification({ message: 'Claude needs your permission to use Bash', notification_type: 'permission_prompt' })
+  await flush($)
+  expect(played.map(soundFile)).toHaveLength(1)
 })

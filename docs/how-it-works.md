@@ -23,6 +23,7 @@ The thresholds are `WARNING_FROM` and `ERROR_FROM` at the top of `hooks/register
 | 📅 Weekly limit | `rateLimits` entry `seven_day` | `session.measure` |
 | 🤖 Model | `$.session.model()` | Session start and each request |
 | 🤖 Effort | `effort` the engine sends with the current request (`turn.step`), saved so a reload of the mod in the same session shows it again | Start of each request |
+| ⚡ Speed | Output tokens of the last main-loop response (thinking included) divided by the time from its first output chunk to its end (`turn.step` stream) | End of each request |
 | 💲 Cost | `cost.usd`, the same total as `/cost`, in US dollars | `session.measure` |
 
 `session.measure` is raised by Claude Code after every turn and whenever a plan limit moves, so those segments carry the same figures as the native status line.
@@ -62,7 +63,9 @@ A numeric effort has no named level and is shown in the default color. The mappi
 | Sound | Event | Condition |
 |---|---|---|
 | Completion | `turn.complete` | Main conversation, `reason` `answer`, `durationMs` ≥ `completeMinSeconds` |
-| Question | `tool.call` on `AskUserQuestion`, `classic.PermissionRequest`, `classic.Elicitation` | At most one sound every 3 seconds, so a question and its permission dialog make one sound |
+| Question | `tool.call` on `AskUserQuestion`, `classic.PermissionRequest`, `classic.Elicitation`, `classic.Notification` (permission and input notices) | At most one sound every 3 seconds, so a question and its permission dialog make one sound |
+
+On managed machines and Team or Enterprise plans, Claude Code's built-in guard keeps user mods off `PermissionRequest`. There the permission sound comes from the notice Claude Code raises when a permission prompt has waited 6 seconds, so it plays with that delay. A notice for a prompt that already played is ignored.
 
 The sound runs in a separate process in the background: the hook passes the event on at once, and a sound that fails to play is ignored. `$.audio.play` is not used because it only has a player on macOS.
 

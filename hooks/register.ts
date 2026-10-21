@@ -42,6 +42,8 @@ type Snapshot = {
   // TTL the last request was sent with: a switch applies from the next request on
   requestTtl?: Ttl
   dates: DateFormatter
+  // Output tokens per second of the last main-loop response
+  speed?: number
   // Last main-loop API response: every request restarts the prompt cache TTL
   lastResponseAt?: number
   effort?: string
@@ -170,10 +172,14 @@ async function systemFormatter($: EngineInterface): Promise<DateFormatter> {
   if (fromEnv) return intlFormatter(fromEnv)
 
   try {
-    const { exitCode, stdout } = await $.process.run(['defaults', 'read', '-g', 'AppleLocale'], { timeoutMs: 5_000 })
-    if (exitCode === 0) return intlFormatter(posixToBcp47(stdout.trim()))
+    // Only macOS has `defaults`: asking elsewhere just logs a missing-executable warning
+    const uname = await $.process.run(['uname'], { timeoutMs: 5_000 })
+    if (uname.stdout.trim() === 'Darwin') {
+      const { exitCode, stdout } = await $.process.run(['defaults', 'read', '-g', 'AppleLocale'], { timeoutMs: 5_000 })
+      if (exitCode === 0) return intlFormatter(posixToBcp47(stdout.trim()))
+    }
   } catch {
-    // Not macOS
+    // No uname: not a Unix system
   }
   return intlFormatter(undefined)
 }
@@ -210,26 +216,66 @@ function cacheSegment(): Segment {
     : { icon: '⏳', percent: 100, text: 'scaduta' }
 }
 
-function segments(): Segment[] {
-  const list = [cacheSegment()]
-  const { usage, model, effort } = state
+// Block ids for the `blocks` option, in their default order
+const BLOCK_IDS = ['cache', 'context', '5h', '7d', 'model', 'speed', 'cost'] as const
+type BlockId = (typeof BLOCK_IDS)[number]
 
-  if (usage) {
-    const context = contextPercent(usage.context)
-    list.push({ icon: '🧠', percent: context, text: pct(context) })
-    const fiveHour = limitSegment('🕒', usage.rateLimits.find(l => l.kind === 'five_hour'))
-    const weekly = limitSegment('📅', usage.rateLimits.find(l => l.kind === 'seven_day'))
-    if (fiveHour) list.push(fiveHour)
-    if (weekly) list.push(weekly)
+// Blocks shown and their order; set from the `blocks` option at load
+let blocks: BlockId[] = [...BLOCK_IDS]
+let unknownBlocks: string[] = []
+
+function isBlockId(value: string): value is BlockId {
+  return (BLOCK_IDS as readonly string[]).includes(value)
+}
+
+// "cache, model, cost" -> those blocks in that order; empty or "default" -> every block
+function parseBlocks(value: unknown): { ids: BlockId[]; unknown: string[] } {
+  const text = typeof value === 'string' ? value.trim().toLowerCase() : ''
+  if (text === '' || text === 'default') return { ids: [...BLOCK_IDS], unknown: [] }
+  const ids: BlockId[] = []
+  const unknown: string[] = []
+  for (const name of text.split(/[\s,;]+/).filter(Boolean)) {
+    if (!isBlockId(name)) unknown.push(name)
+    else if (!ids.includes(name)) ids.push(name)
   }
-  if (model) {
-    // A numeric effort has no named level: shown in the default color
-    const style = effort ? EFFORT_STYLE[effort] : undefined
-    // Two letters keep the row short: lo, me, hi, xh, ma
-    list.push({ icon: '🤖', text: model, ...(effort ? { accent: { text: effort.slice(0, 2), ...style } } : {}) })
+  return { ids, unknown }
+}
+
+function speedSegment(): Segment {
+  const speed = state.speed
+  return { icon: '⚡', text: `${padInteger(speed === undefined ? '-' : String(Math.round(speed)))} tok/s` }
+}
+
+function buildBlock(id: BlockId): Segment | undefined {
+  const { usage, model, effort } = state
+  switch (id) {
+    case 'cache':
+      return cacheSegment()
+    case 'context': {
+      if (!usage) return undefined
+      const context = contextPercent(usage.context)
+      return { icon: '🧠', percent: context, text: pct(context) }
+    }
+    case '5h':
+      return usage && limitSegment('🕒', usage.rateLimits.find(l => l.kind === 'five_hour'))
+    case '7d':
+      return usage && limitSegment('📅', usage.rateLimits.find(l => l.kind === 'seven_day'))
+    case 'model': {
+      if (!model) return undefined
+      // A numeric effort has no named level: shown in the default color
+      const style = effort ? EFFORT_STYLE[effort] : undefined
+      // Two letters keep the row short: lo, me, hi, xh, ma
+      return { icon: '🤖', text: model, ...(effort ? { accent: { text: effort.slice(0, 2), ...style } } : {}) }
+    }
+    case 'speed':
+      return speedSegment()
+    case 'cost':
+      return usage?.cost && { icon: '💲', text: usage.cost.usd.toFixed(2) }
   }
-  if (usage?.cost) list.push({ icon: '💲', text: usage.cost.usd.toFixed(2) })
-  return list
+}
+
+function segments(): Segment[] {
+  return blocks.map(buildBlock).filter((segment): segment is Segment => segment !== undefined)
 }
 
 function isTruthy(value: string | undefined): boolean {
@@ -347,6 +393,16 @@ type MenuItem = {
   // Absent: the item is shown dimmed and cannot be chosen
   onPress?: () => Promise<void> | void
 }
+
+// Notification types that mean Claude Code is waiting for an answer
+const QUESTION_NOTIFICATIONS = new Set([
+  'permission_prompt',
+  'worker_permission_prompt',
+  'elicitation_dialog',
+  'elicitation_url_dialog',
+  'agent_needs_input',
+])
+const NOTIFICATION_WINDOW_MS = 10_000
 
 // Sound settings from the plugin options; a menu toggle updates them at once, ahead of the reload it causes
 let sounds: SoundSettings = readSoundSettings({})
@@ -505,6 +561,7 @@ export const register: Register = (on, options) => {
   const locale = configured.toLowerCase() === 'system' ? '' : configured
   if (locale !== '') state.dates = intlFormatter(locale)
   sounds = readSoundSettings(options)
+  ;({ ids: blocks, unknown: unknownBlocks } = parseBlocks(options.blocks))
 
   on('session.start', async ($, e, next) => {
     // An explicit locale wins; otherwise the OS regional settings, resolved once per session
@@ -513,6 +570,7 @@ export const register: Register = (on, options) => {
     state.model = await $.session.model()
     if (state.effort === undefined) await restoreEffort($)
     await resolveTtl($)
+    if (unknownBlocks.length > 0) $.ui.toast(`Blocchi sconosciuti ignorati: ${unknownBlocks.join(', ')}. Validi: ${BLOCK_IDS.join(', ')}`)
     await tick($)
     // 1 s tick drives the cache countdown; the other figures arrive via session.measure
     $.clock.every(1000, () => void tick($))
@@ -539,8 +597,21 @@ export const register: Register = (on, options) => {
       }
     }
     const ttlForRequest = state.ttl
-    const result = yield* next(e)
+    // Pass every chunk on unchanged, noting when the model starts producing output
+    const stream = next(e)
+    let firstOutputAt: number | undefined
+    for await (const chunk of stream) {
+      if (firstOutputAt === undefined && chunk.kind !== 'engine' && chunk.kind !== 'stop') firstOutputAt = await $.clock.now()
+      yield chunk
+    }
+    const result = await stream.result
     if (e.agentId === undefined) {
+      const endedAt = await $.clock.now()
+      const outputTokens = result.usage?.output_tokens
+      // Generation speed: output tokens (thinking included) over the time they streamed in
+      if (firstOutputAt !== undefined && outputTokens && endedAt - firstOutputAt >= 100) {
+        state.speed = outputTokens / ((endedAt - firstOutputAt) / 1000)
+      }
       state.lastResponseAt = await $.clock.now()
       state.requestTtl = ttlForRequest
       state.model = await $.session.model()
@@ -575,6 +646,14 @@ export const register: Register = (on, options) => {
 
   on('classic.Elicitation', async ($, e, next) => {
     void playQuestionSound($, sounds)
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  // Where the built-in guard (managed machines, Team and Enterprise plans) keeps user mods off
+  // PermissionRequest, the notice Claude Code raises 6 s into a waiting prompt still reaches the mod.
+  // The wider window keeps it silent when PermissionRequest already played for the same prompt
+  on('classic.Notification', async ($, e, next) => {
+    if (QUESTION_NOTIFICATIONS.has(e.notification_type)) void playQuestionSound($, sounds, NOTIFICATION_WINDOW_MS)
     return next(e)
   }).catch(($, e, next) => next(e))
 

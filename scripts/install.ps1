@@ -33,6 +33,7 @@ $PluginId    = "statusbar@$Marketplace"
 
 # Every plugin option gets a stored value: an unset one makes Claude Code ask to configure the plugin
 $OptionDefaults = [ordered]@{
+    blocks             = 'default'
     locale             = 'system'
     soundOnComplete    = $true
     soundOnQuestion    = $true

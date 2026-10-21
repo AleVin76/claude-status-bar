@@ -91,10 +91,11 @@ export async function playSound($: EngineInterface, kind: SoundKind, settings: S
   }
 }
 
-export async function playQuestionSound($: EngineInterface, settings: SoundSettings): Promise<void> {
+// `windowMs`: how long after the last question sound this one counts as the same question
+export async function playQuestionSound($: EngineInterface, settings: SoundSettings, windowMs = QUESTION_DEBOUNCE_MS): Promise<void> {
   if (!settings.onQuestion) return
   const now = await $.clock.now()
-  if (now - lastQuestionSoundAt < QUESTION_DEBOUNCE_MS) return
+  if (now - lastQuestionSoundAt < windowMs) return
   lastQuestionSoundAt = now
   await playSound($, 'question', settings)
 }

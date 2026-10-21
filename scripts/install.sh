@@ -51,7 +51,7 @@ else
   step "Installing ${PLUGIN_ID}"
   # Every plugin option gets a stored value: an unset one makes Claude Code ask to configure the plugin
   claude plugin install "$PLUGIN_ID" --scope user \
-    --config "locale=system" --config "soundOnComplete=true" --config "soundOnQuestion=true" \
+    --config "blocks=default" --config "locale=system" --config "soundOnComplete=true" --config "soundOnQuestion=true" \
     --config "completeSound=default" --config "questionSound=default" --config "completeMinSeconds=15"
 fi
 
@@ -86,7 +86,7 @@ if "cacheTtl" in options:
 # Before 1.3.2 an empty locale meant "system"; an unset option makes Claude Code ask to configure the plugin
 plugin_options = data.setdefault("pluginConfigs", {}).setdefault(plugin_id, {}).setdefault("options", {})
 # Options added by later versions, and an empty locale (before 1.3.2 it meant "system"), get their default
-defaults = {"locale": "system", "soundOnComplete": True, "soundOnQuestion": True,
+defaults = {"blocks": "default", "locale": "system", "soundOnComplete": True, "soundOnQuestion": True,
             "completeSound": "default", "questionSound": "default", "completeMinSeconds": 15}
 for name, value in defaults.items():
     current = plugin_options.get(name)

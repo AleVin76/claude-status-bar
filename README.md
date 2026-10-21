@@ -3,7 +3,7 @@
 A [Claude Code mod](https://code.claude.com/docs/it/plugins/mods/overview) that adds a single colored status row directly above the prompt with everything you need to keep an eye on during a session:
 
 ```
-⏳ ███████░░░ 3:41 | 🧠 █░░░░░░░░░   6.00% | 🕒 █░░░░░░░░░   5% (11:00) | 📅 ░░░░░░░░░░   1% (20/10 11:00) | 🤖 Opus 5.5 me | 💲 1.23        [≡] [-]
+⏳ ███████░░░ 3:41 | 🧠 █░░░░░░░░░   6.00% | 🕒 █░░░░░░░░░   5% (11:00) | 📅 ░░░░░░░░░░   1% (20/10 11:00) | 🤖 Opus 5.5 me | ⚡  75 tok/s | 💲 1.23        [≡] [-]
 ```
 
 | Segment | Meaning |
@@ -12,6 +12,7 @@ A [Claude Code mod](https://code.claude.com/docs/it/plugins/mods/overview) that 
 | 🧠 | Context window usage |
 | 🕒 | 5-hour plan limit, with reset time. Once the limit is reached: time left to the reset (`2:15:30`) |
 | 📅 | Weekly plan limit, with reset date and time. Once the limit is reached: time left to the reset (`2g 3:04:05`) |
+| ⚡ | Generation speed of the last answer, in output tokens per second |
 | 🤖 | Model and reasoning effort as its first two letters, colored by strength: `lo` gray, `me` green, `hi` yellow, `xh` orange, `ma` red and bold |
 | 💲 | What the session would have cost at API prices, in US dollars |
 | [≡] | Menu, right-aligned at the end of the row, in the theme's `suggestion` color (brackets and menu frame). Click it (or Tab + Enter) to open a framed list of actions that grows upward from the bar, one per line; a choice, **Chiudi** or a second press closes it |
@@ -34,6 +35,8 @@ Menu actions:
 | Question | Claude asks you something: a multiple-choice question, a permission request, an MCP input request. One sound per burst | `sounds/question.wav`, two rising notes |
 
 Each sound can be turned on or off on its own, and each can use your own WAV file: see [Configuration → Sounds](docs/configuration.md#sounds). Sounds play on the computer running Claude Code (terminal, or local sessions of the Desktop app); cloud sessions are silent.
+
+Which blocks appear, and in which order, is set by the `blocks` option: see [Configuration → Blocks](docs/configuration.md#blocks).
 
 Bars turn **green** below 50%, **yellow** from 50% and **red** from 80%. The ⏳ bar drains as the cache ages and changes color on the elapsed share. Colors follow your Claude Code theme (`success`, `warning`, `error`). Reset dates and times follow the operating system's regional settings.
 

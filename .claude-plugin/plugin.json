@@ -1,6 +1,6 @@
 {
   "name": "statusbar",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "Status line: prompt cache countdown, context, plan limits, model/effort, API-equivalent cost",
   "author": {
     "name": "Alessandro Vinciguerra"
@@ -9,6 +9,12 @@
   "repository": "https://github.com/AleVin76/claude-status-bar",
   "license": "MIT",
   "userConfig": {
+    "blocks": {
+      "type": "string",
+      "title": "Blocks and order",
+      "description": "Blocks to show, in order, separated by commas: cache, context, 5h, 7d, model, speed, cost. \"default\" shows them all",
+      "default": "default"
+    },
     "locale": {
       "type": "string",
       "title": "Date/time locale",

@@ -4,6 +4,7 @@
 
 | Option | Values | Default | Description |
 |---|---|---|---|
+| `blocks` | `default` or block ids separated by commas | `default` | Blocks shown and their order, see [Blocks](#blocks) |
 | `locale` | `system` or a BCP 47 tag (`it-IT`, `en-GB`, …) | `system` | Locale for reset dates and times. `system` (or empty) uses the operating system's regional settings (see [How it works → Date and time format](how-it-works.md#date-and-time-format)). |
 
 | `soundOnComplete` | `true`, `false` | `true` | Completion sound |
@@ -29,6 +30,7 @@ claude plugin install statusbar@claude-status-bar --config locale=it-IT
   "pluginConfigs": {
     "statusbar@claude-status-bar": {
       "options": {
+        "blocks": "default",
         "locale": "system",
         "soundOnComplete": true,
         "soundOnQuestion": true,
@@ -42,6 +44,38 @@ claude plugin install statusbar@claude-status-bar --config locale=it-IT
 ```
 
 For a folder loaded with `--plugin-dir` or `CLAUDE_CODE_PLUGIN_DIRS`, the key is `statusbar@inline`.
+
+## Blocks
+
+The `blocks` option lists the blocks to show, in the order they appear. Leave out a block to hide it; `default` (or empty) shows every block in the default order.
+
+| Id | Block |
+|---|---|
+| `cache` | ⏳ Prompt cache countdown |
+| `context` | 🧠 Context window usage |
+| `5h` | 🕒 5-hour plan limit |
+| `7d` | 📅 Weekly plan limit |
+| `model` | 🤖 Model and effort |
+| `speed` | ⚡ Output tokens per second of the last answer |
+| `cost` | 💲 API-equivalent cost |
+
+Examples:
+
+| `blocks` | Row |
+|---|---|
+| `default` | `⏳ … \| 🧠 … \| 🕒 … \| 📅 … \| 🤖 … \| ⚡ … \| 💲 …` |
+| `model, speed, context` | `🤖 … \| ⚡ … \| 🧠 …` |
+| `5h, 7d, cache` | `🕒 … \| 📅 … \| ⏳ …` |
+
+Set it from `/config` (**Blocks and order**) or in `settings.json`:
+
+```json
+"pluginConfigs": {
+  "statusbar@claude-status-bar": { "options": { "blocks": "model, speed, context, 5h, 7d" } }
+}
+```
+
+Unknown ids are ignored and named in a notice at session start. The [≡] menu is always shown.
 
 ## Sounds
 
